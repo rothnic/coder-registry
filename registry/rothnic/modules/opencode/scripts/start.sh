@@ -86,24 +86,26 @@ start_agentapi() {
 
   build_opencode_args
 
-  echo "Starting OpenCode..."
+  echo "Starting OpenCode with agentapi in ACP mode..."
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
 
+  # OpenCode uses 'acp' subcommand for stdio/ACP communication with agentapi
+  # Following the goose pattern for terminal dimensions
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
     if [ ${#OPENCODE_ARGS[@]} -gt 0 ]; then
       echo "OpenCode arguments: ${OPENCODE_ARGS[*]}"
-      agentapi server -I="$initial_prompt" --type opencode --term-width 120 --term-height 40 -- opencode "${OPENCODE_ARGS[@]}"
+      agentapi server -I="$initial_prompt" --term-width 67 --term-height 1190 -- opencode acp "${OPENCODE_ARGS[@]}"
     else
-      agentapi server -I="$initial_prompt" --type opencode --term-width 120 --term-height 40 -- opencode
+      agentapi server -I="$initial_prompt" --term-width 67 --term-height 1190 -- opencode acp
     fi
   else
     if [ ${#OPENCODE_ARGS[@]} -gt 0 ]; then
       echo "OpenCode arguments: ${OPENCODE_ARGS[*]}"
-      agentapi server --type opencode --term-width 120 --term-height 40 -- opencode "${OPENCODE_ARGS[@]}"
+      agentapi server --term-width 67 --term-height 1190 -- opencode acp "${OPENCODE_ARGS[@]}"
     else
-      agentapi server --type opencode --term-width 120 --term-height 40 -- opencode
+      agentapi server --term-width 67 --term-height 1190 -- opencode acp
     fi
   fi
 }
