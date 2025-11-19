@@ -76,6 +76,16 @@ install_opencode() {
     if [ "$ARG_INSTALL_METHOD" = "curl" ]; then
       curl -fsSL https://opencode.ai/install | bash
     elif [ "$ARG_INSTALL_METHOD" = "npm" ]; then
+      # Configure npm to install to user directory to avoid permission issues
+      mkdir -p "$HOME/.local/bin"
+      npm config set prefix "$HOME/.local"
+      export PATH="$HOME/.local/bin:$PATH"
+
+      # Persist PATH to shell profile
+      if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+      fi
+
       if [ "$ARG_OPENCODE_VERSION" = "latest" ]; then
         npm install -g opencode-ai@latest
       else
@@ -94,9 +104,9 @@ install_opencode() {
       exit 1
     fi
 
-    echo "OpenCode installed successfully"
+    echo "✓ OpenCode installed successfully: $(opencode --version 2>&1 | head -1)"
   else
-    echo "OpenCode already installed"
+    echo "✓ OpenCode already installed: $(opencode --version 2>&1 | head -1)"
   fi
 }
 
