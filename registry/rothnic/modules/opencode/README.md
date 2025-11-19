@@ -1,14 +1,38 @@
 ---
 display_name: OpenCode
-description: AI-powered terminal coding agent with support for multiple providers including GitHub Copilot
+description: AI-powered terminal coding agent with support for multiple providers including GitHub Copilot, Anthropic, and OpenAI
 icon: ../../../../.icons/code.svg
+maintainer_github: rothnic
 verified: false
-tags: [agent, ai, opencode, coding-assistant, copilot]
+tags: [agent, ai, opencode, coding-assistant, copilot, terminal, automation]
 ---
 
 # OpenCode
 
-Run [OpenCode.ai](https://opencode.ai/) in your workspace for AI-powered coding assistance directly from the terminal. OpenCode is a powerful AI coding agent built for the terminal that supports multiple providers including GitHub Copilot, Anthropic, and OpenAI. This module integrates with [AgentAPI](https://github.com/coder/agentapi) for task reporting in the Coder UI.
+Integrate [OpenCode.ai](https://opencode.ai/) into your Coder workspace for AI-powered coding assistance directly from the terminal. OpenCode is a powerful, open-source AI coding agent built specifically for the terminal that brings the power of AI pair programming to your command line.
+
+## What is OpenCode?
+
+[OpenCode](https://github.com/opencode-ai/opencode) is an AI coding agent that runs in your terminal and helps you:
+
+- **Write code faster** with intelligent completions and suggestions
+- **Debug issues** with AI-powered error analysis and fixes
+- **Refactor code** with automated improvements and best practices
+- **Learn new technologies** with contextual explanations and examples
+- **Automate tasks** through natural language instructions
+
+Unlike traditional IDEs with AI extensions, OpenCode is designed for terminal-first workflows and integrates seamlessly with your existing command-line tools.
+
+## Key Features
+
+- 🤖 **Multiple AI Providers**: Choose from GitHub Copilot, Anthropic Claude, OpenAI GPT, and more
+- 🔐 **Seamless Authentication**: Automatic GitHub authentication via Coder external auth
+- 📊 **Task Reporting**: Integration with [AgentAPI](https://github.com/coder/agentapi) for real-time task tracking in Coder UI
+- 💾 **Session Persistence**: Resume your AI conversations across workspace restarts
+- 🎨 **Customizable**: Configure prompts, providers, and behavior to match your workflow
+- 🚀 **Multiple Installation Methods**: NPM or direct curl installation
+
+## Quick Start
 
 ```tf
 module "opencode" {
@@ -19,29 +43,31 @@ module "opencode" {
 }
 ```
 
+This basic configuration installs OpenCode with GitHub Copilot as the default provider and enables task reporting to your Coder UI.
+
 > [!IMPORTANT]
-> This module assumes you have [Coder external authentication](https://coder.com/docs/admin/external-auth) configured with `id = "github"` if you want to use the GitHub Copilot provider. If not, you can provide a direct token using the `github_token` variable or configure authentication interactively using `opencode auth login`.
+> For GitHub Copilot integration, ensure you have [Coder external authentication](https://coder.com/docs/admin/external-auth) configured with `id = "github"`. Alternatively, provide a token via the `github_token` variable or configure authentication interactively with `opencode auth login`.
 
 > [!NOTE]
-> By default, this module is configured to run the embedded chat interface as a path-based application. In production, we recommend that you configure a [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url) and set `subdomain = true`. See [here](https://coder.com/docs/tutorials/best-practices/security-best-practices#disable-path-based-apps) for more details.
+> By default, this module uses path-based app access. In production, we recommend configuring a [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url) and setting `subdomain = true`. See [security best practices](https://coder.com/docs/tutorials/best-practices/security-best-practices#disable-path-based-apps) for details.
 
 ## Prerequisites
 
 - **Node.js v18+** and **npm** (when using npm install method)
-- **AI Provider Access** (depending on which provider you choose):
-  - **GitHub Copilot**: Active [GitHub Copilot subscription](https://docs.github.com/en/copilot/about-github-copilot/subscription-plans-for-github-copilot)
-  - **Anthropic**: Anthropic API key
-  - **OpenAI**: OpenAI API key
-- **GitHub authentication** (for Copilot provider) via one of:
+- **AI Provider Access** (one of the following):
+  - **[GitHub Copilot](https://github.com/features/copilot)**: Active subscription (Individual, Pro, Business, or Enterprise)
+  - **[Anthropic](https://www.anthropic.com/)**: API key for Claude models
+  - **[OpenAI](https://platform.openai.com/)**: API key for GPT models
+- **GitHub Authentication** (for Copilot provider):
   - [Coder external authentication](https://coder.com/docs/admin/external-auth) (recommended)
   - Direct token via `github_token` variable
   - Interactive login via `opencode auth login`
 
-## Examples
+## Usage Examples
 
-### Basic Usage with GitHub Copilot
+### Basic GitHub Copilot Setup
 
-Use GitHub Copilot as the AI provider through Coder's external auth:
+The simplest way to get started with GitHub Copilot:
 
 ```tf
 module "opencode" {
@@ -54,9 +80,9 @@ module "opencode" {
 }
 ```
 
-### Usage with Tasks
+### Task-Based Workflow
 
-For development environments where you want OpenCode to automatically resume sessions and receive initial prompts:
+Enable initial prompts and task tracking for automated workflows:
 
 ```tf
 data "coder_parameter" "ai_prompt" {
@@ -78,9 +104,9 @@ module "opencode" {
 }
 ```
 
-### Using Different AI Providers
+### Multiple AI Providers
 
-OpenCode supports multiple AI providers. Configure the provider of your choice:
+Switch between different AI providers based on your needs:
 
 ```tf
 module "opencode" {
@@ -89,16 +115,17 @@ module "opencode" {
   agent_id = coder_agent.example.id
   workdir  = "/home/coder/projects"
 
-  opencode_provider = "anthropic"  # or "openai", "copilot"
+  # Choose your provider: "copilot", "anthropic", "openai", etc.
+  opencode_provider = "anthropic"
 
-  # Provider credentials can be configured via opencode_config
+  # Configure provider credentials via opencode_config
   # or set up interactively with 'opencode auth login'
 }
 ```
 
 ### Advanced Configuration
 
-Customize OpenCode settings and installation:
+Full customization with version pinning and pre-installation scripts:
 
 ```tf
 module "opencode" {
@@ -107,19 +134,19 @@ module "opencode" {
   agent_id = coder_agent.example.id
   workdir  = "/home/coder/projects"
 
-  # Version pinning (defaults to "latest")
+  # Pin OpenCode version for stability
   opencode_version = "0.1.5"
 
-  # Installation method
+  # Choose installation method
   install_method = "npm"  # or "curl"
 
-  # Custom OpenCode configuration
+  # Custom configuration
   opencode_config = jsonencode({
     theme = "dark"
-    # Add other OpenCode config options
+    # Additional OpenCode config options
   })
 
-  # Pre-install Node.js if needed
+  # Ensure Node.js is available
   pre_install_script = <<-EOT
     #!/bin/bash
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -130,7 +157,7 @@ module "opencode" {
 
 ### Direct Token Authentication
 
-Use this example when you want to provide a GitHub Personal Access Token for Copilot instead of using Coder external auth:
+Provide a GitHub token directly instead of using Coder external auth:
 
 ```tf
 variable "github_token" {
@@ -148,9 +175,9 @@ module "opencode" {
 }
 ```
 
-### Standalone Mode
+### Standalone CLI Mode
 
-Run OpenCode as a command-line tool without task reporting or web interface. This installs and configures OpenCode, making it available as a CLI app in the Coder agent bar that you can launch to interact with OpenCode directly from your terminal. Set `report_tasks = false` to disable integration with Coder Tasks.
+Install OpenCode as a standalone CLI tool without the web interface:
 
 ```tf
 module "opencode" {
@@ -163,43 +190,90 @@ module "opencode" {
 }
 ```
 
+This makes OpenCode available as a CLI app in your Coder agent bar for direct terminal access.
+
 ## Authentication
 
-The module supports multiple authentication methods for GitHub Copilot provider (in priority order):
+### GitHub Copilot Provider
 
-1. **[Coder External Auth](https://coder.com/docs/admin/external-auth) (Recommended)** - Automatic if GitHub external auth is configured in Coder
-2. **Direct Token** - Pass `github_token` variable (OAuth or Personal Access Token)
-3. **Interactive** - Configure providers via `opencode auth login` command
+The module supports multiple authentication methods (in priority order):
 
-For other providers (Anthropic, OpenAI), you can either:
+1. **[Coder External Auth](https://coder.com/docs/admin/external-auth) (Recommended)**
+   - Automatic OAuth token retrieval
+   - Best security and user experience
+   - Configured at the Coder deployment level
+
+2. **Direct Token**
+   - Pass via `github_token` variable
+   - Supports OAuth or Personal Access Tokens
+   - Good for testing or specific use cases
+
+3. **Interactive Login**
+   - Run `opencode auth login` in the workspace
+   - Manual configuration of providers
+   - Useful for multiple provider setups
+
+### Other Providers
+
+For Anthropic, OpenAI, and other providers:
 
 - Use `opencode auth login` to configure interactively
-- Configure via `opencode_config` variable
-- Set environment variables in your template
+- Set via `opencode_config` variable with API keys
+- Configure through environment variables in your template
 
 > [!NOTE]
-> OAuth tokens work best with GitHub Copilot. Personal Access Tokens may have limited functionality.
+> OAuth tokens work best with GitHub Copilot. Personal Access Tokens may have limited functionality depending on permissions.
 
-## Session Resumption
+## Session Management
 
-By default, the module resumes the latest OpenCode session when the workspace restarts. Set `resume_session = false` to always start fresh sessions.
+OpenCode supports persistent sessions that survive workspace restarts:
+
+- **Default behavior**: Automatically resumes the latest session
+- **Disable resumption**: Set `resume_session = false` for fresh sessions
+- **Requirements**: Persistent storage for home directory or workspace volume
+
+```tf
+module "opencode" {
+  source         = "registry.coder.com/rothnic/opencode/coder"
+  version        = "1.0.0"
+  agent_id       = coder_agent.example.id
+  workdir        = "/home/coder/projects"
+  resume_session = false  # Always start fresh
+}
+```
 
 > [!NOTE]
-> Session resumption requires persistent storage for the home directory or workspace volume. Without persistent storage, sessions will not resume across workspace restarts.
+> Without persistent storage, sessions cannot resume across workspace restarts, and you'll start fresh each time.
 
 ## GitHub Copilot Integration
 
-OpenCode can use GitHub Copilot as an AI provider, giving you access to powerful models like Claude Sonnet and GPT-4 through your GitHub Copilot subscription. To enable this:
+OpenCode leverages GitHub Copilot to provide access to powerful AI models including:
 
-1. Configure GitHub external auth in Coder (recommended) OR provide a GitHub token
-2. Ensure you have an active GitHub Copilot subscription
-3. Set `opencode_provider = "copilot"` (this is the default)
+- **Claude Sonnet 4** and **Claude Sonnet 4.5**
+- **GPT-4** and **GPT-5**
+- Other models available through your GitHub Copilot subscription
 
-OpenCode will automatically authenticate with GitHub Copilot using your credentials. See the [OpenCode GitHub documentation](https://opencode.ai/docs/github/) for more details on GitHub Copilot integration.
+### Setup Steps
+
+1. **Configure Authentication**
+   - Set up [Coder external auth](https://coder.com/docs/admin/external-auth) for GitHub, OR
+   - Provide a GitHub token via `github_token` variable
+
+2. **Verify Copilot Subscription**
+   - Ensure you have an active [GitHub Copilot subscription](https://docs.github.com/en/copilot/about-github-copilot/subscription-plans-for-github-copilot)
+   - Individual, Pro+, Business, or Enterprise plans supported
+
+3. **Use Copilot Provider**
+   - Set `opencode_provider = "copilot"` (default)
+   - OpenCode automatically authenticates using your credentials
+
+For more details, see the [OpenCode GitHub Integration documentation](https://opencode.ai/docs/github/).
 
 ## Troubleshooting
 
-If you encounter any issues, check the log files in the `~/.opencode-module` directory within your workspace for detailed information.
+### Check Installation Logs
+
+All logs are stored in `~/.opencode-module/` within your workspace:
 
 ```bash
 # Installation logs
@@ -213,13 +287,71 @@ cat ~/.opencode-module/pre_install.log
 cat ~/.opencode-module/post_install.log
 ```
 
-> [!NOTE]
-> The `workdir` variable is required and specifies the directory where OpenCode will run.
+### Common Issues
 
-## References
+**OpenCode not found after installation**
+```bash
+# Check if OpenCode is in PATH
+which opencode
 
-- [OpenCode.ai Documentation](https://opencode.ai/docs/)
-- [OpenCode GitHub Repository](https://github.com/opencode-ai/opencode)
-- [OpenCode GitHub Integration](https://opencode.ai/docs/github/)
-- [AgentAPI Documentation](https://github.com/coder/agentapi)
-- [Coder AI Agents Guide](https://coder.com/docs/tutorials/ai-agents)
+# Verify installation
+opencode --version
+
+# Reload shell
+source ~/.bashrc
+```
+
+**GitHub authentication fails**
+```bash
+# Check Coder external auth
+coder external-auth access-token github
+
+# Manually configure
+opencode auth login
+```
+
+**Node.js version too old**
+```bash
+# Check Node version
+node --version
+
+# Install Node.js 20+
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+## Configuration Variables
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `agent_id` | string | (required) | The ID of the Coder agent |
+| `workdir` | string | (required) | Working directory for OpenCode |
+| `opencode_provider` | string | `"copilot"` | AI provider to use |
+| `github_token` | string | `""` | GitHub token for authentication |
+| `opencode_version` | string | `"latest"` | OpenCode version to install |
+| `install_method` | string | `"npm"` | Installation method: npm or curl |
+| `report_tasks` | bool | `true` | Enable task reporting to Coder UI |
+| `resume_session` | bool | `true` | Resume sessions on restart |
+| `subdomain` | bool | `false` | Use subdomain for AgentAPI |
+| `cli_app` | bool | `false` | Create CLI app in agent bar |
+
+See the full list of variables in [main.tf](./main.tf).
+
+## Learn More
+
+- 📚 [OpenCode Documentation](https://opencode.ai/docs/)
+- 🐙 [OpenCode GitHub Repository](https://github.com/opencode-ai/opencode)
+- 🔗 [OpenCode GitHub Integration](https://opencode.ai/docs/github/)
+- 🔌 [OpenCode Providers](https://opencode.ai/docs/providers/)
+- 🤖 [AgentAPI Documentation](https://github.com/coder/agentapi)
+- 📖 [Coder AI Agents Guide](https://coder.com/docs/tutorials/ai-agents)
+
+## Support
+
+For issues specific to this module, please [open an issue](https://github.com/rothnic/coder-registry/issues) in the repository.
+
+For OpenCode-related questions, visit the [OpenCode GitHub Discussions](https://github.com/opencode-ai/opencode/discussions).
+
+---
+
+**Maintained by** [Nick Roth](https://github.com/rothnic) | [Website](https://www.nickroth.com) | [LinkedIn](http://www.linkedin.com/in/nicholasleeroth/)
