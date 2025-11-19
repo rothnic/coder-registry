@@ -15,22 +15,56 @@ ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_OPENCODE_VERSION=${ARG_OPENCODE_VERSION:-latest}
 ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-npm}
 
-validate_prerequisites() {
-  if [ "$ARG_INSTALL_METHOD" = "npm" ]; then
+install_nodejs() {
+  if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
+    # curl install method includes Node.js, skip
+    return 0
+  fi
+
+  if ! command_exists node; then
+    echo "Node.js not found. Installing Node.js 20..."
+
+    # Try to install using package manager
+    if command_exists apt-get; then
+      echo "Installing Node.js via apt-get..."
+      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      sudo apt-get install -y nodejs
+    elif command_exists yum; then
+      echo "Installing Node.js via yum..."
+      curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+      sudo yum install -y nodejs
+    elif command_exists apk; then
+      echo "Installing Node.js via apk..."
+      sudo apk add --no-cache nodejs npm
+    else
+      echo "WARNING: Could not detect package manager. Attempting to install via nvm..."
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      nvm install 20
+      nvm use 20
+    fi
+
+    # Reload shell environment
+    source "$HOME"/.bashrc 2>/dev/null || true
+
     if ! command_exists node; then
-      echo "ERROR: Node.js not found. OpenCode requires Node.js v18+."
-      echo "Install with: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs"
+      echo "ERROR: Failed to install Node.js"
       exit 1
     fi
 
-    if ! command_exists npm; then
-      echo "ERROR: npm not found. OpenCode requires npm."
-      exit 1
-    fi
-
+    echo "✓ Node.js installed successfully: $(node --version)"
+  else
     node_version=$(node --version | sed 's/v//' | cut -d. -f1)
     if [ "$node_version" -lt 18 ]; then
-      echo "WARNING: Node.js v$node_version detected. OpenCode requires v18+."
+      echo "WARNING: Node.js v$node_version detected. OpenCode requires v18+. Attempting upgrade..."
+      # Attempt to upgrade (best effort)
+      if command_exists apt-get; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+      fi
+    else
+      echo "✓ Node.js $(node --version) already installed"
     fi
   fi
 }
@@ -149,7 +183,7 @@ configure_coder_integration() {
   fi
 }
 
-validate_prerequisites
+install_nodejs
 install_opencode
 check_github_authentication
 setup_opencode_configurations
