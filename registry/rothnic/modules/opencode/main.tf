@@ -252,3 +252,9 @@ module "agentapi" {
     /tmp/install.sh
   EOT
 }
+
+# Output for Coder Tasks integration
+output "task_app_id" {
+  description = "The app ID for use with coder_ai_task resource"
+  value       = module.agentapi.task_app_id
+}
