@@ -163,6 +163,11 @@ setup_opencode_config() {
 configure_github_copilot_provider() {
   echo "Configuring GitHub Copilot provider for OpenCode..."
 
+  export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+  local opencode_data_dir="$XDG_DATA_HOME/opencode"
+  local auth_file="$opencode_data_dir/auth.json"
+  mkdir -p "$opencode_data_dir"
+
   local github_token=""
 
   if [ -n "${GITHUB_TOKEN:-}" ]; then
@@ -172,11 +177,32 @@ configure_github_copilot_provider() {
   fi
 
   if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-    echo "✓ GitHub token available for Copilot provider"
+    echo "✓ GitHub token available - configuring Copilot provider in auth.json"
+
+    # Create auth.json with GitHub Copilot credentials
+    cat > "$auth_file" <<EOF
+{
+  "credentials": [
+    {
+      "provider": "copilot",
+      "token": "$github_token"
+    }
+  ]
+}
+EOF
+
+    echo "✓ GitHub Copilot provider configured successfully"
     export GITHUB_TOKEN="$github_token"
     export GH_TOKEN="$github_token"
   else
-    echo "⚠ No GitHub token available. Run 'opencode auth login' to configure providers."
+    echo "⚠ No GitHub token available."
+    echo "  OpenCode can still work with other providers."
+    echo "  To use GitHub Copilot, configure Coder external auth or run 'opencode auth login'"
+
+    # Create empty auth.json if it doesn't exist
+    if [ ! -f "$auth_file" ]; then
+      echo '{"credentials":[]}' > "$auth_file"
+    fi
   fi
 }
 
