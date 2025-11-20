@@ -82,18 +82,18 @@ start_agentapi() {
   echo "Starting in directory: $ARG_WORKDIR"
   cd "$ARG_WORKDIR"
 
-  echo "Starting OpenCode with agentapi in ACP mode..."
+  echo "Starting OpenCode TUI with agentapi..."
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
 
-  # Use 'opencode acp' - Agent Communication Protocol mode for stdio communication
-  # ACP is designed for agent wrappers like agentapi that communicate via stdin/stdout
-  # Provider selection is handled via auth.json (configured during installation)
+  # Run opencode TUI with working directory as project path
+  # Agentapi sends plain text to stdin/stdout, not JSON-RPC
+  # OpenCode's TUI mode reads plain text input, similar to copilot/goose
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
-    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode acp
+    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
   else
-    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode acp
+    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
   fi
 }
 
