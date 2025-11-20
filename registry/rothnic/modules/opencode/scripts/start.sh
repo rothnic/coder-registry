@@ -49,22 +49,38 @@ setup_github_authentication() {
   export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
   echo "Setting up GitHub authentication..."
 
+  local opencode_data_dir="$XDG_DATA_HOME/opencode"
+  local auth_file="$opencode_data_dir/auth.json"
+  mkdir -p "$opencode_data_dir"
+
+  local github_token=""
+
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    export GH_TOKEN="$GITHUB_TOKEN"
+    github_token="$GITHUB_TOKEN"
     echo "✓ Using GitHub token from module configuration"
-    return 0
+  elif command_exists coder; then
+    github_token=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null || echo "")
+    if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
+      echo "✓ Using Coder external auth OAuth token"
+    fi
   fi
 
-  if command_exists coder; then
-    local github_token
-    if github_token=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null); then
-      if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-        export GITHUB_TOKEN="$github_token"
-        export GH_TOKEN="$github_token"
-        echo "✓ Using Coder external auth OAuth token"
-        return 0
-      fi
-    fi
+  if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
+    # Create/update auth.json with GitHub Copilot credentials
+    cat > "$auth_file" <<EOF
+{
+  "credentials": [
+    {
+      "provider": "copilot",
+      "token": "$github_token"
+    }
+  ]
+}
+EOF
+    echo "✓ GitHub Copilot provider configured in auth.json"
+    export GITHUB_TOKEN="$github_token"
+    export GH_TOKEN="$github_token"
+    return 0
   fi
 
   if command_exists gh && gh auth status > /dev/null 2>&1; then
@@ -75,6 +91,12 @@ setup_github_authentication() {
   echo "⚠ No GitHub authentication available"
   echo "  OpenCode can still work with other providers"
   echo "  Use 'opencode auth login' to configure providers"
+
+  # Ensure auth.json exists even without credentials
+  if [ ! -f "$auth_file" ]; then
+    echo '{"credentials":[]}' > "$auth_file"
+  fi
+
   return 0
 }
 
