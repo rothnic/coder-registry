@@ -231,7 +231,7 @@ module "agentapi" {
     set -o errexit
     set -o pipefail
     echo -n '${base64encode(local.start_script)}' | base64 -d > /tmp/start.sh
-    chmod +x /tmp/start.sh
+    chmod +x /tmp/start.sh || true
 
     ARG_WORKDIR='${local.workdir}' \
     ARG_AI_PROMPT='${base64encode(var.ai_prompt)}' \
@@ -240,7 +240,7 @@ module "agentapi" {
     ARG_EXTERNAL_AUTH_ID='${var.external_auth_id}' \
     ARG_RESUME_SESSION='${var.resume_session}' \
     ARG_OPENCODE_AUTH_CONFIG='${var.opencode_auth_config != "" ? base64encode(var.opencode_auth_config) : ""}' \
-    /tmp/start.sh
+    bash /tmp/start.sh
   EOT
 
   install_script = <<-EOT
@@ -248,7 +248,7 @@ module "agentapi" {
     set -o errexit
     set -o pipefail
     echo -n '${base64encode(local.install_script)}' | base64 -d > /tmp/install.sh
-    chmod +x /tmp/install.sh
+    chmod +x /tmp/install.sh || true
 
     ARG_MCP_APP_STATUS_SLUG='${local.app_slug}' \
     ARG_REPORT_TASKS='${var.report_tasks}' \
@@ -257,6 +257,6 @@ module "agentapi" {
     ARG_EXTERNAL_AUTH_ID='${var.external_auth_id}' \
     ARG_OPENCODE_VERSION='${var.opencode_version}' \
     ARG_INSTALL_METHOD='${var.install_method}' \
-    /tmp/install.sh
+    bash /tmp/install.sh
   EOT
 }
