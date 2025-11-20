@@ -15,7 +15,7 @@ Integrate [OpenCode.ai](https://opencode.ai/) - an AI coding agent that runs in 
 
 ```tf
 module "opencode" {
-  source  = "git::https://github.com/rothnic/coder-registry.git//registry/rothnic/modules/opencode"
+  source = "git::https://github.com/rothnic/coder-registry.git//registry/rothnic/modules/opencode"
 
   agent_id = coder_agent.main.id
   workdir  = "/workspaces"
@@ -31,18 +31,20 @@ OpenCode requires GitHub Copilot's special session token format. Three options:
 **Option 1: Pre-configured auth (Recommended)**
 
 Run locally:
+
 ```bash
 npm install -g opencode-ai
-opencode auth login  # Complete device flow
-cat ~/.local/share/opencode/auth.json  # Copy this
+opencode auth login                   # Complete device flow
+cat ~/.local/share/opencode/auth.json # Copy this
 ```
 
 In your template:
+
 ```tf
 module "opencode" {
   source = "..."
 
-  opencode_auth_config = file("${path.module}/opencode-auth.json")  # Store as file
+  opencode_auth_config = file("${path.module}/opencode-auth.json") # Store as file
   # Or use variable: opencode_auth_config = var.opencode_auth_json
 }
 ```
@@ -61,15 +63,15 @@ For Anthropic, OpenAI, etc., users authenticate via `opencode auth login` in the
 
 ## Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `agent_id` | Coder agent ID | Required |
-| `workdir` | Working directory | Required |
-| `opencode_auth_config` | Pre-configured auth.json content | `""` (optional) |
-| `opencode_version` | OpenCode version | `"latest"` |
-| `install_method` | Installation method: `npm` or `curl` | `"npm"` |
-| `report_tasks` | Enable Coder task reporting | `true` |
-| `subdomain` | Use subdomain for app access | `false` |
+| Variable               | Description                          | Default         |
+| ---------------------- | ------------------------------------ | --------------- |
+| `agent_id`             | Coder agent ID                       | Required        |
+| `workdir`              | Working directory                    | Required        |
+| `opencode_auth_config` | Pre-configured auth.json content     | `""` (optional) |
+| `opencode_version`     | OpenCode version                     | `"latest"`      |
+| `install_method`       | Installation method: `npm` or `curl` | `"npm"`         |
+| `report_tasks`         | Enable Coder task reporting          | `true`          |
+| `subdomain`            | Use subdomain for app access         | `false`         |
 
 See [variables](./main.tf) for complete list.
 

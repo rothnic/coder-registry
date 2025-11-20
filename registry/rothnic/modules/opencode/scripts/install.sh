@@ -46,7 +46,7 @@ install_nodejs() {
     fi
 
     # Reload shell environment
-    source "$HOME"/.bashrc 2>/dev/null || true
+    source "$HOME"/.bashrc 2> /dev/null || true
 
     if ! command_exists node; then
       echo "ERROR: Failed to install Node.js"
@@ -82,7 +82,7 @@ install_opencode() {
       export PATH="$HOME/.local/bin:$PATH"
 
       # Persist PATH to shell profile
-      if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+      if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2> /dev/null; then
         echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
       fi
 
@@ -180,7 +180,7 @@ configure_github_copilot_provider() {
     echo "✓ GitHub token available - configuring Copilot provider in auth.json"
 
     # Create auth.json with GitHub Copilot credentials
-    cat > "$auth_file" <<EOF
+    cat > "$auth_file" << EOF
 {
   "credentials": [
     {

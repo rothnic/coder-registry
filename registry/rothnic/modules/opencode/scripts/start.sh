@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-source "$HOME"/.bashrc 2>/dev/null || true
+source "$HOME"/.bashrc 2> /dev/null || true
 export PATH="$HOME/.local/bin:$PATH"
 
 command_exists() {
@@ -78,7 +78,7 @@ setup_github_authentication() {
     # Note: This creates a simplified auth.json that may not work with GitHub Copilot
     # For full GitHub Copilot support, use the opencode_auth_config variable
     echo "⚠ Warning: Using simplified auth format - GitHub Copilot may require device flow auth"
-    cat > "$auth_file" <<EOF
+    cat > "$auth_file" << EOF
 {
   "credentials": [
     {
