@@ -7,6 +7,27 @@ command_exists() {
   command -v "$1" > /dev/null 2>&1
 }
 
+# Retry function for apt operations
+retry_apt() {
+  local max_attempts=5
+  local attempt=1
+  local delay=2
+
+  while [ $attempt -le $max_attempts ]; do
+    if "$@"; then
+      return 0
+    fi
+
+    echo "Command failed (attempt $attempt/$max_attempts). Retrying in ${delay}s..."
+    sleep $delay
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+  done
+
+  echo "ERROR: Command failed after $max_attempts attempts: $*"
+  return 1
+}
+
 ARG_WORKDIR=${ARG_WORKDIR:-"$HOME"}
 ARG_REPORT_TASKS=${ARG_REPORT_TASKS:-true}
 ARG_MCP_APP_STATUS_SLUG=${ARG_MCP_APP_STATUS_SLUG:-}
@@ -27,15 +48,32 @@ install_nodejs() {
     # Try to install using package manager
     if command_exists apt-get; then
       echo "Installing Node.js via apt-get..."
-      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-      sudo apt-get install -y nodejs
+
+      # Wait for any existing apt processes to finish
+      local wait_count=0
+      while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+            sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+        if [ $wait_count -ge 30 ]; then
+          echo "WARNING: Waited 30s for apt lock, proceeding anyway..."
+          break
+        fi
+        echo "Waiting for other apt processes to finish..."
+        sleep 1
+        wait_count=$((wait_count + 1))
+      done
+
+      # Add NodeSource repository with retries
+      retry_apt bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+
+      # Install Node.js with retries
+      retry_apt sudo apt-get install -y nodejs
     elif command_exists yum; then
       echo "Installing Node.js via yum..."
-      curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
-      sudo yum install -y nodejs
+      retry_apt bash -c "curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -"
+      retry_apt sudo yum install -y nodejs
     elif command_exists apk; then
       echo "Installing Node.js via apk..."
-      sudo apk add --no-cache nodejs npm
+      retry_apt sudo apk add --no-cache nodejs npm
     else
       echo "WARNING: Could not detect package manager. Attempting to install via nvm..."
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -60,8 +98,8 @@ install_nodejs() {
       echo "WARNING: Node.js v$node_version detected. OpenCode requires v18+. Attempting upgrade..."
       # Attempt to upgrade (best effort)
       if command_exists apt-get; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-        sudo apt-get install -y nodejs
+        retry_apt bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+        retry_apt sudo apt-get install -y nodejs
       fi
     else
       echo "✓ Node.js $(node --version) already installed"
