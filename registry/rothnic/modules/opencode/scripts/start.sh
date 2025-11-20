@@ -14,6 +14,7 @@ ARG_SYSTEM_PROMPT=$(echo -n "${ARG_SYSTEM_PROMPT:-}" | base64 -d 2> /dev/null ||
 ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_RESUME_SESSION=${ARG_RESUME_SESSION:-true}
 ARG_OPENCODE_PROVIDER=${ARG_OPENCODE_PROVIDER:-copilot}
+ARG_OPENCODE_AUTH_CONFIG=$(echo -n "${ARG_OPENCODE_AUTH_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
 
 validate_opencode_installation() {
   if ! command_exists opencode; then
@@ -53,6 +54,14 @@ setup_github_authentication() {
   local auth_file="$opencode_data_dir/auth.json"
   mkdir -p "$opencode_data_dir"
 
+  # Check if pre-configured auth.json was provided
+  if [ -n "$ARG_OPENCODE_AUTH_CONFIG" ]; then
+    echo "✓ Using pre-configured auth.json from module variable"
+    echo "$ARG_OPENCODE_AUTH_CONFIG" > "$auth_file"
+    return 0
+  fi
+
+  # Try to get GitHub token from external auth
   local github_token=""
 
   if [ -n "${GITHUB_TOKEN:-}" ]; then
@@ -66,7 +75,9 @@ setup_github_authentication() {
   fi
 
   if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-    # Create/update auth.json with GitHub Copilot credentials
+    # Note: This creates a simplified auth.json that may not work with GitHub Copilot
+    # For full GitHub Copilot support, use the opencode_auth_config variable
+    echo "⚠ Warning: Using simplified auth format - GitHub Copilot may require device flow auth"
     cat > "$auth_file" <<EOF
 {
   "credentials": [
@@ -77,7 +88,6 @@ setup_github_authentication() {
   ]
 }
 EOF
-    echo "✓ GitHub Copilot provider configured in auth.json"
     export GITHUB_TOKEN="$github_token"
     export GH_TOKEN="$github_token"
     return 0
@@ -90,7 +100,9 @@ EOF
 
   echo "⚠ No GitHub authentication available"
   echo "  OpenCode can still work with other providers"
-  echo "  Use 'opencode auth login' to configure providers"
+  echo "  To use GitHub Copilot:"
+  echo "    1. Run 'opencode auth login' locally to get auth.json"
+  echo "    2. Pass the auth.json content via opencode_auth_config variable"
 
   # Ensure auth.json exists even without credentials
   if [ ! -f "$auth_file" ]; then

@@ -43,6 +43,13 @@ variable "opencode_config" {
   default     = ""
 }
 
+variable "opencode_auth_config" {
+  type        = string
+  description = "Pre-configured OpenCode auth.json content as JSON string. Use this to provide GitHub Copilot credentials obtained from running 'opencode auth login' locally."
+  default     = ""
+  sensitive   = true
+}
+
 variable "ai_prompt" {
   type        = string
   description = "Initial task prompt for programmatic mode."
@@ -232,6 +239,7 @@ module "agentapi" {
     ARG_OPENCODE_PROVIDER='${var.opencode_provider}' \
     ARG_EXTERNAL_AUTH_ID='${var.external_auth_id}' \
     ARG_RESUME_SESSION='${var.resume_session}' \
+    ARG_OPENCODE_AUTH_CONFIG='${var.opencode_auth_config != "" ? base64encode(var.opencode_auth_config) : ""}' \
     /tmp/start.sh
   EOT
 
