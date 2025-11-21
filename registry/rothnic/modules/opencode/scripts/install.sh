@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-source "$HOME"/.bashrc
+source "$HOME"/.bashrc 2>/dev/null || true
 
 command_exists() {
   command -v "$1" > /dev/null 2>&1
@@ -21,9 +21,14 @@ install_nodejs() {
     return 0
   fi
 
+  # Check if node already exists and is adequate version
   if command_exists node; then
-    echo "✓ Node.js $(node --version) already installed"
-    return 0
+    node_version=$(node --version | sed 's/v//' | cut -d. -f1)
+    if [ "$node_version" -ge 18 ]; then
+      echo "✓ Node.js $(node --version) already installed"
+      return 0
+    fi
+    echo "Node.js v$node_version found but v18+ required, installing newer version..."
   fi
 
   echo "Installing Node.js via NVM..."
@@ -48,27 +53,32 @@ install_nodejs() {
   echo "✓ Node.js $(node --version) installed successfully"
 }
 
-setup_npm_global() {
+setup_npm_prefix() {
   if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
     return 0
   fi
 
-  # Follow codex pattern: configure npm to use user directory
-  # This ensures global packages are accessible without sudo
-  if ! command_exists nvm; then
-    echo "Setting up npm global directory (non-NVM setup)..."
-    mkdir -p "$HOME/.npm-global/bin"
-    npm config set prefix "$HOME/.npm-global"
-    export PATH="$HOME/.npm-global/bin:$PATH"
+  # Configure npm to install global packages to ~/.local/bin
+  # This is the KEY difference from broken NVM approach:
+  # - NVM puts npm packages in ~/.nvm/versions/node/<ver>/bin/ (requires sourcing NVM)
+  # - This puts them in ~/.local/bin (simple PATH, works in subprocesses)
+  echo "Configuring npm prefix to ~/.local..."
+  mkdir -p "$HOME/.local/bin"
+  npm config set prefix "$HOME/.local"
+  export PATH="$HOME/.local/bin:$PATH"
 
-    # Persist to bashrc like codex does
-    if ! grep -q 'export PATH="$HOME/.npm-global/bin:$PATH"' ~/.bashrc 2>/dev/null; then
-      echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
-    fi
+  # Persist to bashrc (like working apt-get version did)
+  if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
   fi
+
+  echo "✓ npm prefix configured to ~/.local"
 }
 
 install_opencode() {
+  # Make sure PATH is set before checking
+  export PATH="$HOME/.local/bin:$PATH"
+
   if command_exists opencode; then
     echo "✓ OpenCode already installed: $(opencode --version 2>&1 | head -1)"
     return 0
@@ -79,7 +89,6 @@ install_opencode() {
   if [ "$ARG_INSTALL_METHOD" = "curl" ]; then
     curl -fsSL https://opencode.ai/install | bash
   elif [ "$ARG_INSTALL_METHOD" = "npm" ]; then
-    # Use npm like codex does (not pnpm) - simpler and PATH is already configured
     if [ "$ARG_OPENCODE_VERSION" = "latest" ]; then
       npm install -g opencode-ai@latest
     else
@@ -167,7 +176,6 @@ configure_github_copilot_provider() {
   if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
     echo "✓ GitHub token available - configuring Copilot provider in auth.json"
 
-    # Create auth.json with GitHub Copilot credentials
     cat > "$auth_file" <<EOF
 {
   "credentials": [
@@ -187,7 +195,6 @@ EOF
     echo "  OpenCode can still work with other providers."
     echo "  To use GitHub Copilot, configure Coder external auth or run 'opencode auth login'"
 
-    # Create empty auth.json if it doesn't exist
     if [ ! -f "$auth_file" ]; then
       echo '{"credentials":[]}' > "$auth_file"
     fi
@@ -207,15 +214,16 @@ configure_coder_integration() {
   fi
 }
 
+# Main execution
 install_nodejs
-setup_npm_global
+setup_npm_prefix
 install_opencode
 check_github_authentication
 setup_opencode_configurations
 configure_github_copilot_provider
 configure_coder_integration
 
-# Final verification - like codex does
+# Final verification
 echo "=== Final Verification ==="
 echo "Node.js: $(node --version)"
 echo "npm: $(npm --version)"
