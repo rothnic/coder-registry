@@ -8,15 +8,12 @@ command_exists() {
   command -v "$1" > /dev/null 2>&1
 }
 
-# Load NVM if available (like codex does)
+# Load NVM if available, otherwise use npm-global (like codex does)
 if [ -f "$HOME/.nvm/nvm.sh" ]; then
   source "$HOME/.nvm/nvm.sh"
 else
   export PATH="$HOME/.npm-global/bin:$PATH"
 fi
-
-# Add pnpm to PATH
-export PATH="$HOME/.local/share/pnpm:$PATH"
 
 # Quick verification - if this fails, install didn't complete
 printf "OpenCode version: %s\n" "$(opencode --version 2>&1 | head -1)"
@@ -74,8 +71,6 @@ setup_github_authentication() {
   fi
 
   if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-    # Note: This creates a simplified auth.json that may not work with GitHub Copilot
-    # For full GitHub Copilot support, use the opencode_auth_config variable
     echo "⚠ Warning: Using simplified auth format - GitHub Copilot may require device flow auth"
     cat > "$auth_file" <<EOF
 {
@@ -98,10 +93,6 @@ EOF
   fi
 
   echo "⚠ No GitHub authentication available"
-  echo "  OpenCode can still work with other providers"
-  echo "  To use GitHub Copilot:"
-  echo "    1. Run 'opencode auth login' locally to get auth.json"
-  echo "    2. Pass the auth.json content via opencode_auth_config variable"
 
   # Ensure auth.json exists even without credentials
   if [ ! -f "$auth_file" ]; then
@@ -120,32 +111,16 @@ start_agentapi() {
   echo "OpenCode: $(which opencode)"
   echo "==================="
 
-  # Create wrapper script to ensure environment is loaded when agentapi spawns opencode
-  local wrapper_script="/tmp/opencode-wrapper-$$.sh"
-  cat > "$wrapper_script" <<'WRAPPER_EOF'
-#!/bin/bash
-# Load NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Add pnpm to PATH
-export PATH="$HOME/.local/share/pnpm:$PATH"
-
-# Run opencode with all arguments
-exec opencode "$@"
-WRAPPER_EOF
-  chmod +x "$wrapper_script" || true
-
   echo "Starting OpenCode TUI with agentapi..."
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
 
-  # Use wrapper script to ensure environment is available in subprocess
+  # Run opencode directly like codex does (no wrapper script)
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
-    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- "$wrapper_script" "$ARG_WORKDIR"
+    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
   else
-    agentapi server --type=opencode --term-width 67 --term-height 1190 -- "$wrapper_script" "$ARG_WORKDIR"
+    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
   fi
 }
 

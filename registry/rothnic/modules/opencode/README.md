@@ -22,7 +22,7 @@ module "opencode" {
 }
 ```
 
-Node.js LTS is automatically installed via NVM when using the `npm` install method (default). The module also installs pnpm for faster package management.
+Node.js LTS is automatically installed via NVM when using the `npm` install method (default).
 
 ## Authentication (Optional)
 
@@ -82,17 +82,14 @@ See [variables](./main.tf) for complete list.
 - 💾 Session persistence
 - 🔐 Flexible authentication
 - 🚀 Automatic Node.js installation via NVM
-- ⚡ Fast package management with pnpm
 
 ## Prerequisites
 
 - **Node.js 18+**: Automatically installed via NVM (npm install method only)
-- **pnpm**: Automatically installed for faster package management
 
 ## Notes
 
 - Node.js LTS is automatically installed via NVM (if using npm install method)
-- Uses pnpm for faster, more efficient package installation
 - TUI may have limitations through AgentAPI (slash commands, menus)
 - For production, use `subdomain = true` with [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url)
 

@@ -48,49 +48,54 @@ install_nodejs() {
   echo "✓ Node.js $(node --version) installed successfully"
 }
 
-install_pnpm() {
+setup_npm_global() {
   if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
     return 0
   fi
 
-  if command_exists pnpm; then
-    echo "✓ pnpm $(pnpm --version) already installed"
-    return 0
+  # Follow codex pattern: configure npm to use user directory
+  # This ensures global packages are accessible without sudo
+  if ! command_exists nvm; then
+    echo "Setting up npm global directory (non-NVM setup)..."
+    mkdir -p "$HOME/.npm-global/bin"
+    npm config set prefix "$HOME/.npm-global"
+    export PATH="$HOME/.npm-global/bin:$PATH"
+
+    # Persist to bashrc like codex does
+    if ! grep -q 'export PATH="$HOME/.npm-global/bin:$PATH"' ~/.bashrc 2>/dev/null; then
+      echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
+    fi
   fi
-
-  echo "Installing pnpm..."
-  npm install -g pnpm
-
-  echo "✓ pnpm $(pnpm --version) installed successfully"
 }
 
 install_opencode() {
-  if ! command_exists opencode; then
-    echo "Installing OpenCode (version: ${ARG_OPENCODE_VERSION}, method: ${ARG_INSTALL_METHOD})..."
-
-    if [ "$ARG_INSTALL_METHOD" = "curl" ]; then
-      curl -fsSL https://opencode.ai/install | bash
-    elif [ "$ARG_INSTALL_METHOD" = "npm" ]; then
-      # Use pnpm for faster, more efficient installation
-      if [ "$ARG_OPENCODE_VERSION" = "latest" ]; then
-        pnpm install -g opencode-ai@latest
-      else
-        pnpm install -g "opencode-ai@${ARG_OPENCODE_VERSION}"
-      fi
-    else
-      echo "ERROR: Unknown install method: $ARG_INSTALL_METHOD"
-      exit 1
-    fi
-
-    if ! command_exists opencode; then
-      echo "ERROR: Failed to install OpenCode"
-      exit 1
-    fi
-
-    echo "✓ OpenCode installed successfully: $(opencode --version 2>&1 | head -1)"
-  else
+  if command_exists opencode; then
     echo "✓ OpenCode already installed: $(opencode --version 2>&1 | head -1)"
+    return 0
   fi
+
+  echo "Installing OpenCode (version: ${ARG_OPENCODE_VERSION}, method: ${ARG_INSTALL_METHOD})..."
+
+  if [ "$ARG_INSTALL_METHOD" = "curl" ]; then
+    curl -fsSL https://opencode.ai/install | bash
+  elif [ "$ARG_INSTALL_METHOD" = "npm" ]; then
+    # Use npm like codex does (not pnpm) - simpler and PATH is already configured
+    if [ "$ARG_OPENCODE_VERSION" = "latest" ]; then
+      npm install -g opencode-ai@latest
+    else
+      npm install -g "opencode-ai@${ARG_OPENCODE_VERSION}"
+    fi
+  else
+    echo "ERROR: Unknown install method: $ARG_INSTALL_METHOD"
+    exit 1
+  fi
+
+  if ! command_exists opencode; then
+    echo "ERROR: Failed to install OpenCode"
+    exit 1
+  fi
+
+  echo "✓ OpenCode installed successfully: $(opencode --version 2>&1 | head -1)"
 }
 
 check_github_authentication() {
@@ -203,7 +208,7 @@ configure_coder_integration() {
 }
 
 install_nodejs
-install_pnpm
+setup_npm_global
 install_opencode
 check_github_authentication
 setup_opencode_configurations
@@ -214,7 +219,7 @@ configure_coder_integration
 echo "=== Final Verification ==="
 echo "Node.js: $(node --version)"
 echo "npm: $(npm --version)"
-echo "pnpm: $(pnpm --version)"
+echo "which opencode: $(which opencode)"
 opencode --version
 echo "==========================="
 
