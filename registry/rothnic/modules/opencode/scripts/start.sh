@@ -187,18 +187,34 @@ start_agentapi() {
     exit 1
   fi
 
+  # Create a wrapper script that ensures environment is loaded when opencode runs
+  # This is needed because agentapi spawns a subprocess that doesn't inherit our environment
+  local wrapper_script="/tmp/opencode-wrapper-$$.sh"
+  cat > "$wrapper_script" <<'WRAPPER_EOF'
+#!/bin/bash
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Add pnpm to PATH
+export PATH="$HOME/.local/share/pnpm:$PATH"
+
+# Run opencode with all arguments
+exec opencode "$@"
+WRAPPER_EOF
+  chmod +x "$wrapper_script"
+
   echo "Starting OpenCode TUI with agentapi..."
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
 
-  # Run opencode TUI with working directory as project path
-  # Agentapi sends plain text to stdin/stdout, not JSON-RPC
-  # OpenCode's TUI mode reads plain text input, similar to copilot/goose
+  # Use the wrapper script instead of calling opencode directly
+  # This ensures NVM and pnpm are in PATH when the subprocess runs
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
-    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
+    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- "$wrapper_script" "$ARG_WORKDIR"
   else
-    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
+    agentapi server --type=opencode --term-width 67 --term-height 1190 -- "$wrapper_script" "$ARG_WORKDIR"
   fi
 }
 
