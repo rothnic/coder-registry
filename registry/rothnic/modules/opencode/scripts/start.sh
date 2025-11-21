@@ -2,7 +2,13 @@
 set -euo pipefail
 
 source "$HOME"/.bashrc 2>/dev/null || true
-export PATH="$HOME/.local/bin:$PATH"
+
+# Load NVM if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Ensure pnpm is in PATH
+export PATH="$HOME/.local/share/pnpm:$PATH"
 
 command_exists() {
   command -v "$1" > /dev/null 2>&1

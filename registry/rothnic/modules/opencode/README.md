@@ -14,21 +14,15 @@ Integrate [OpenCode.ai](https://opencode.ai/) - an AI coding agent that runs in 
 ## Quick Start
 
 ```tf
-# Node.js 18+ required for npm install method
-module "nodejs" {
-  source   = "registry.coder.com/thezoker/nodejs/coder"
-  agent_id = coder_agent.main.id
-}
-
 module "opencode" {
   source  = "git::https://github.com/rothnic/coder-registry.git//registry/rothnic/modules/opencode"
 
   agent_id = coder_agent.main.id
   workdir  = "/workspaces"
-
-  depends_on = [module.nodejs]
 }
 ```
+
+Node.js LTS is automatically installed via NVM when using the `npm` install method (default). The module also installs pnpm for faster package management.
 
 ## Authentication (Optional)
 
@@ -87,15 +81,18 @@ See [variables](./main.tf) for complete list.
 - 📊 Task reporting to Coder UI
 - 💾 Session persistence
 - 🔐 Flexible authentication
-- 🚀 Uses nodejs module for installation
+- 🚀 Automatic Node.js installation via NVM
+- ⚡ Fast package management with pnpm
 
 ## Prerequisites
 
-- **Node.js 18+**: Use the [nodejs module](https://github.com/coder/registry/tree/main/registry/thezoker/modules/nodejs) (npm install method only)
+- **Node.js 18+**: Automatically installed via NVM (npm install method only)
+- **pnpm**: Automatically installed for faster package management
 
 ## Notes
 
-- Uses [thezoker/nodejs](https://github.com/coder/registry/tree/main/registry/thezoker/modules/nodejs) module for Node.js installation
+- Node.js LTS is automatically installed via NVM (if using npm install method)
+- Uses pnpm for faster, more efficient package installation
 - TUI may have limitations through AgentAPI (slash commands, menus)
 - For production, use `subdomain = true` with [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url)
 
