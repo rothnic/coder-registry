@@ -22,7 +22,7 @@ module "opencode" {
 }
 ```
 
-Node.js LTS is automatically installed via NVM when using the `npm` install method (default).
+OpenCode is automatically installed via the official curl installer (no Node.js required).
 
 ## Authentication (Optional)
 
@@ -81,15 +81,16 @@ See [variables](./main.tf) for complete list.
 - 📊 Task reporting to Coder UI
 - 💾 Session persistence
 - 🔐 Flexible authentication
-- 🚀 Automatic Node.js installation via NVM
+- 🚀 Simple curl-based installation (no Node.js required)
 
 ## Prerequisites
 
-- **Node.js 18+**: Automatically installed via NVM (npm install method only)
+- None - OpenCode is installed via the official curl installer which handles its own runtime
 
 ## Notes
 
-- Node.js LTS is automatically installed via NVM (if using npm install method)
+- OpenCode is installed via `curl -fsSL https://opencode.ai/install | bash`
+- Version pinning is not supported with curl installer (always installs latest)
 - TUI may have limitations through AgentAPI (slash commands, menus)
 - For production, use `subdomain = true` with [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url)
 

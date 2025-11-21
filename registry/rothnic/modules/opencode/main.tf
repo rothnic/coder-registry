@@ -82,12 +82,8 @@ variable "opencode_version" {
 
 variable "install_method" {
   type        = string
-  description = "Installation method for OpenCode: 'npm' (default) or 'curl'."
-  default     = "npm"
-  validation {
-    condition     = contains(["npm", "curl"], var.install_method)
-    error_message = "install_method must be either 'npm' or 'curl'."
-  }
+  description = "Installation method for OpenCode. Currently only 'curl' is used (installs latest)."
+  default     = "curl"
 }
 
 variable "report_tasks" {

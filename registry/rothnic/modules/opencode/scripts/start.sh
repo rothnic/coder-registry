@@ -18,9 +18,10 @@ ARG_OPENCODE_AUTH_CONFIG=$(echo -n "${ARG_OPENCODE_AUTH_CONFIG:-}" | base64 -d 2
 
 validate_opencode_installation() {
   if ! command_exists opencode; then
-    echo "ERROR: OpenCode not installed."
+    echo "ERROR: OpenCode not found on PATH. Did install.sh fail?"
     exit 1
   fi
+  echo "✓ OpenCode found: $(opencode --version 2>&1 | head -1 || echo '')"
 }
 
 build_initial_prompt() {
@@ -39,77 +40,49 @@ $ARG_AI_PROMPT"
   echo "$initial_prompt"
 }
 
-build_opencode_args() {
-  OPENCODE_ARGS=()
-
-  # ACP mode doesn't accept --provider argument
-  # Provider is configured via auth.json during installation
-}
-
 setup_github_authentication() {
   export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-  echo "Setting up GitHub authentication..."
-
   local opencode_data_dir="$XDG_DATA_HOME/opencode"
   local auth_file="$opencode_data_dir/auth.json"
+
+  echo "Setting up OpenCode / GitHub authentication..."
   mkdir -p "$opencode_data_dir"
 
-  # Check if pre-configured auth.json was provided
+  # 1) If the module is given a full auth.json blob, use it verbatim.
   if [ -n "$ARG_OPENCODE_AUTH_CONFIG" ]; then
-    echo "✓ Using pre-configured auth.json from module variable"
+    echo "✓ Using pre-configured OpenCode auth.json from module variable"
     echo "$ARG_OPENCODE_AUTH_CONFIG" > "$auth_file"
-    return 0
   fi
 
-  # Try to get GitHub token from external auth
-  local github_token=""
-
-  if [ -n "${GITHUB_TOKEN:-}" ]; then
-    github_token="$GITHUB_TOKEN"
-    echo "✓ Using GitHub token from module configuration"
-  elif command_exists coder; then
-    github_token=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null || echo "")
-    if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-      echo "✓ Using Coder external auth OAuth token"
+  # 2) For general GitHub use (git, gh), try to populate GITHUB_TOKEN / GH_TOKEN.
+  #    We do NOT derive auth.json from these tokens.
+  if [ -z "${GITHUB_TOKEN:-}" ]; then
+    if command_exists coder; then
+      local t
+      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2>/dev/null || echo "")
+      if [ -n "$t" ] && [ "$t" != "null" ]; then
+        export GITHUB_TOKEN="$t"
+        export GH_TOKEN="$t"
+        echo "✓ Using Coder external auth token for GitHub (GITHUB_TOKEN/GH_TOKEN)"
+      fi
     fi
+  else
+    export GH_TOKEN="$GITHUB_TOKEN"
+    echo "✓ Using GITHUB_TOKEN from module configuration"
   fi
 
-  if [ -n "$github_token" ] && [ "$github_token" != "null" ]; then
-    # Note: This creates a simplified auth.json that may not work with GitHub Copilot
-    # For full GitHub Copilot support, use the opencode_auth_config variable
-    echo "⚠ Warning: Using simplified auth format - GitHub Copilot may require device flow auth"
-    cat > "$auth_file" <<EOF
-{
-  "credentials": [
-    {
-      "provider": "copilot",
-      "token": "$github_token"
-    }
-  ]
-}
-EOF
-    export GITHUB_TOKEN="$github_token"
-    export GH_TOKEN="$github_token"
-    return 0
+  # 3) If still no token env, fall back to gh CLI if it's logged in.
+  if [ -z "${GITHUB_TOKEN:-}" ] && command_exists gh && gh auth status >/dev/null 2>&1; then
+    echo "✓ GitHub CLI auth is available (gh auth status ok)"
   fi
 
-  if command_exists gh && gh auth status > /dev/null 2>&1; then
-    echo "✓ Using GitHub CLI OAuth authentication"
-    return 0
-  fi
-
-  echo "⚠ No GitHub authentication available"
-  echo "  OpenCode can still work with other providers"
-  echo "  To use GitHub Copilot:"
-  echo "    1. Run 'opencode auth login' locally to get auth.json"
-  echo "    2. Pass the auth.json content via opencode_auth_config variable"
-
-  # Ensure auth.json exists even without credentials
+  # 4) If we still don't have an auth.json, warn, but don't fabricate one.
   if [ ! -f "$auth_file" ]; then
-    echo '{"credentials":[]}' > "$auth_file"
+    echo "⚠ No OpenCode auth.json present."
+    echo "  Copilot / provider credentials must be set by:"
+    echo "    - Running 'opencode auth login' and wiring that auth.json into opencode_auth_config"
+    echo "    - Or using another provider via env vars / config"
   fi
-
-  return 0
 }
 
 start_agentapi() {
@@ -120,10 +93,8 @@ start_agentapi() {
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
 
-  # Run opencode TUI with working directory as project path
-  # Agentapi sends plain text to stdin/stdout, not JSON-RPC
-  # OpenCode's TUI mode reads plain text input, similar to copilot/goose
-  # Background with & like codex does
+  # Run opencode with agentapi, backgrounded so start script returns quickly
+  # The agentapi module's wrapper expects the script to exit so it can run its wait loop
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
     agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR" &
