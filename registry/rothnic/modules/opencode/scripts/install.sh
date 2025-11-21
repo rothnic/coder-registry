@@ -15,47 +15,101 @@ ARG_REPORT_TASKS=${ARG_REPORT_TASKS:-true}
 ARG_MCP_APP_STATUS_SLUG=${ARG_MCP_APP_STATUS_SLUG:-}
 ARG_OPENCODE_CONFIG=$(echo -n "${ARG_OPENCODE_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
 ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
-# Kept for future use, but NOT used in curl mode:
 ARG_OPENCODE_VERSION=${ARG_OPENCODE_VERSION:-latest}
-ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-curl}
+ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-npm}
 
-# ---------- OPENCODE INSTALL (CURL SCRIPT ONLY) ----------
+# Version pins for the toolchain
+NODE_VERSION="${NODE_VERSION:-20.18.0}"
 
-install_opencode_via_curl() {
-  if command_exists opencode; then
-    echo "✓ OpenCode already installed: $(opencode --version 2>&1 | head -1 || echo '')"
-    return 0
-  fi
+# ---------- NODE INSTALL (NO APT/NVM, SHARED CACHE) ----------
 
-  echo "OpenCode not found on PATH. Installing via curl installer..."
-
-  # Ensure it ends up in a predictable user bin dir
-  mkdir -p "$HOME/.local/bin"
-  export XDG_BIN_DIR="$HOME/.local/bin"
-
-  # This installs the latest release and handles its own runtime
-  curl -fsSL https://opencode.ai/install | bash
-
-  # Make sure $HOME/.local/bin is on PATH in future shells
-  if ! grep -q 'XDG_BIN_DIR="$HOME/.local/bin"' "$HOME/.bashrc" 2>/dev/null \
-    && ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
-    {
-      echo 'export XDG_BIN_DIR="$HOME/.local/bin"'
-      echo 'export PATH="$HOME/.local/bin:$PATH"'
-    } >> "$HOME/.bashrc"
-  fi
-
-  export PATH="$HOME/.local/bin:$PATH"
-
-  if ! command_exists opencode; then
-    echo "ERROR: OpenCode still not found after curl install."
+install_nodejs() {
+  if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
+    echo "ERROR: install_method=${ARG_INSTALL_METHOD} is not supported without the curl installer."
+    echo "       Use install_method=\"npm\" in the module or Terraform."
     exit 1
   fi
 
-  echo "✓ OpenCode installed via curl: $(opencode --version 2>&1 | head -1 || echo '')"
+  # Shared tool root across workspaces on this host
+  local dev_root="${DEV_ROOT:-/workspaces}"
+  local tool_root="${TOOL_ROOT:-$dev_root/.coder-tools}"
+  local node_distro="linux-x64"
+  local node_tarball="node-v${NODE_VERSION}-${node_distro}.tar.xz"
+  local node_dir="${tool_root}/node-v${NODE_VERSION}-${node_distro}"
+
+  mkdir -p "$tool_root"
+
+  if [ ! -d "$node_dir" ]; then
+    echo "Node.js ${NODE_VERSION} not found in cache. Downloading to ${tool_root}..."
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${node_tarball}" \
+      -o "${tool_root}/${node_tarball}"
+
+    echo "Extracting Node.js..."
+    tar -xJf "${tool_root}/${node_tarball}" -C "$tool_root"
+    rm -f "${tool_root}/${node_tarball}"
+  else
+    echo "✓ Node.js ${NODE_VERSION} already cached at ${node_dir}"
+  fi
+
+  # Make Node available now
+  export PATH="${node_dir}/bin:$HOME/.local/bin:$PATH"
+
+  # Shared npm cache to speed up repeated installs
+  local npm_cache_dir="${tool_root}/npm-cache"
+  mkdir -p "$npm_cache_dir"
+  export NPM_CONFIG_CACHE="$npm_cache_dir"
+
+  # Persist PATH + npm cache so start.sh and future shells see it
+  if ! grep -q "node-v${NODE_VERSION}-${node_distro}/bin" "$HOME/.bashrc" 2>/dev/null; then
+    {
+      echo "export PATH=\"${node_dir}/bin:\$HOME/.local/bin:\$PATH\""
+      echo "export NPM_CONFIG_CACHE=\"${npm_cache_dir}\""
+    } >> "$HOME/.bashrc"
+  fi
+
+  if ! command_exists node; then
+    echo "ERROR: Node.js still not on PATH after tarball install"
+    exit 1
+  fi
+
+  echo "✓ Node.js installed via tarball: $(node --version)"
 }
 
-# ---------- GITHUB AUTH CHECK (for git/gh, NOT auth.json) ----------
+# ---------- OPENCODE INSTALL (NPM, PINNABLE VERSION) ----------
+
+install_opencode() {
+  mkdir -p "$HOME/.local/bin"
+  export PATH="$HOME/.local/bin:$PATH"
+
+  if ! command_exists opencode; then
+    echo "Installing OpenCode via npm (version: ${ARG_OPENCODE_VERSION})..."
+
+    npm config set prefix "$HOME/.local" >/dev/null 2>&1 || true
+
+    if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+    fi
+
+    if [ "$ARG_OPENCODE_VERSION" = "latest" ]; then
+      npm install -g opencode-ai@latest
+    else
+      npm install -g "opencode-ai@${ARG_OPENCODE_VERSION}"
+    fi
+
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if ! command_exists opencode; then
+      echo "ERROR: Failed to install OpenCode"
+      exit 1
+    fi
+
+    echo "✓ OpenCode installed successfully: $(opencode --version 2>&1 | head -1)"
+  else
+    echo "✓ OpenCode already installed: $(opencode --version 2>&1 | head -1)"
+  fi
+}
+
+# ---------- GITHUB AUTH (for git/gh, NOT auth.json) ----------
 
 check_github_authentication() {
   echo "Checking GitHub authentication for git/gh use (not Copilot tokens)..."
@@ -117,7 +171,6 @@ setup_opencode_config() {
 
 configure_github_copilot_provider() {
   # We do NOT fabricate auth.json here anymore.
-  # It is provided verbatim via opencode_auth_config in start.sh.
   export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
   local opencode_data_dir="$XDG_DATA_HOME/opencode"
   mkdir -p "$opencode_data_dir"
@@ -140,7 +193,8 @@ configure_coder_integration() {
 
 # ---------- RUN IT ----------
 
-install_opencode_via_curl
+install_nodejs
+install_opencode
 check_github_authentication
 setup_opencode_configurations
 configure_github_copilot_provider

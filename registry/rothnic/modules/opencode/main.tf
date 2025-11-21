@@ -82,8 +82,8 @@ variable "opencode_version" {
 
 variable "install_method" {
   type        = string
-  description = "Installation method for OpenCode. Currently only 'curl' is used (installs latest)."
-  default     = "curl"
+  description = "Installation method for OpenCode. Use 'npm' with the module-managed Node tarball."
+  default     = "npm"
 }
 
 variable "report_tasks" {

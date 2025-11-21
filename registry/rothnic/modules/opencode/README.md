@@ -22,7 +22,7 @@ module "opencode" {
 }
 ```
 
-OpenCode is automatically installed via the official curl installer (no Node.js required).
+OpenCode is installed via npm with a module-managed Node.js tarball (no apt/nvm required). The Node.js binary is cached in `/workspaces/.coder-tools` for fast subsequent installs.
 
 ## Authentication (Optional)
 
@@ -81,16 +81,20 @@ See [variables](./main.tf) for complete list.
 - 📊 Task reporting to Coder UI
 - 💾 Session persistence
 - 🔐 Flexible authentication
-- 🚀 Simple curl-based installation (no Node.js required)
+- 🚀 Node.js tarball installation (no apt/nvm)
+- 📌 Version pinning support via `opencode_version`
+- 💾 Shared Node.js cache across workspaces
 
 ## Prerequisites
 
-- None - OpenCode is installed via the official curl installer which handles its own runtime
+- None - Node.js is installed via tarball to `/workspaces/.coder-tools`
 
 ## Notes
 
-- OpenCode is installed via `curl -fsSL https://opencode.ai/install | bash`
-- Version pinning is not supported with curl installer (always installs latest)
+- Node.js 20 is installed via tarball (not apt/nvm) for reliability
+- OpenCode is installed via `npm install -g opencode-ai@version`
+- Node.js and npm cache are shared across workspaces in `/workspaces/.coder-tools`
+- Version pinning is supported via `opencode_version` variable
 - TUI may have limitations through AgentAPI (slash commands, menus)
 - For production, use `subdomain = true` with [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url)
 
