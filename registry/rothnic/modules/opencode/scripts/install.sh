@@ -40,15 +40,32 @@ install_nodejs() {
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
   fi
 
-  # Load NVM
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+  # Load NVM - must happen AFTER installation
+  # shellcheck source=/dev/null
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+  else
+    echo "ERROR: NVM installation failed - nvm.sh not found"
+    exit 1
+  fi
+
+  # Verify nvm command is available
+  if ! command_exists nvm; then
+    echo "ERROR: nvm command not found after sourcing nvm.sh"
+    exit 1
+  fi
 
   # Install Node.js LTS
   echo "Installing Node.js LTS..."
   nvm install --lts
   nvm alias default node
   nvm use default
+
+  # Verify node is now available
+  if ! command_exists node; then
+    echo "ERROR: node command not found after nvm install"
+    exit 1
+  fi
 
   echo "✓ Node.js $(node --version) installed successfully"
 }

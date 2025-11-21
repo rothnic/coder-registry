@@ -123,11 +123,12 @@ start_agentapi() {
   # Run opencode TUI with working directory as project path
   # Agentapi sends plain text to stdin/stdout, not JSON-RPC
   # OpenCode's TUI mode reads plain text input, similar to copilot/goose
+  # Background with & like codex does
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
-    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
+    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR" &
   else
-    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR"
+    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR" &
   fi
 }
 
