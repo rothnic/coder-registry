@@ -23,10 +23,36 @@ ARG_OPENCODE_PROVIDER=${ARG_OPENCODE_PROVIDER:-copilot}
 ARG_OPENCODE_AUTH_CONFIG=$(echo -n "${ARG_OPENCODE_AUTH_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
 
 validate_opencode_installation() {
-  if ! command_exists opencode; then
-    echo "ERROR: OpenCode not installed."
-    exit 1
-  fi
+  local max_wait=120  # Wait up to 2 minutes for installation to complete
+  local wait_interval=2
+  local elapsed=0
+
+  echo "Waiting for OpenCode installation to complete..."
+
+  while [ $elapsed -lt $max_wait ]; do
+    # Reload NVM and PATH in case installation just completed
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    export PATH="$HOME/.local/share/pnpm:$PATH"
+
+    if command_exists opencode; then
+      echo "✓ OpenCode is ready: $(opencode --version 2>&1 | head -1)"
+      return 0
+    fi
+
+    if [ $elapsed -eq 0 ]; then
+      echo "Waiting for OpenCode to be installed (this may take a minute)..."
+    elif [ $((elapsed % 10)) -eq 0 ]; then
+      echo "Still waiting... (${elapsed}s elapsed)"
+    fi
+
+    sleep $wait_interval
+    elapsed=$((elapsed + wait_interval))
+  done
+
+  echo "ERROR: OpenCode not installed after ${max_wait} seconds."
+  echo "The installation script may have failed. Check the install logs above."
+  exit 1
 }
 
 build_initial_prompt() {
