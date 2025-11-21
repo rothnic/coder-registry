@@ -210,4 +210,12 @@ setup_opencode_configurations
 configure_github_copilot_provider
 configure_coder_integration
 
+# Final verification - like codex does
+echo "=== Final Verification ==="
+echo "Node.js: $(node --version)"
+echo "npm: $(npm --version)"
+echo "pnpm: $(pnpm --version)"
+opencode --version
+echo "==========================="
+
 echo "OpenCode module setup completed."
