@@ -22,12 +22,12 @@ ARG_RESUME_SESSION=${ARG_RESUME_SESSION:-true}
 ARG_OPENCODE_PROVIDER=${ARG_OPENCODE_PROVIDER:-copilot}
 ARG_OPENCODE_AUTH_CONFIG=$(echo -n "${ARG_OPENCODE_AUTH_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
 
-validate_opencode_installation() {
+validate_environment() {
   local max_wait=120  # Wait up to 2 minutes for installation to complete
   local wait_interval=2
   local elapsed=0
 
-  echo "Waiting for OpenCode installation to complete..."
+  echo "Waiting for installation to complete..."
 
   while [ $elapsed -lt $max_wait ]; do
     # Reload NVM and PATH in case installation just completed
@@ -35,23 +35,45 @@ validate_opencode_installation() {
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     export PATH="$HOME/.local/share/pnpm:$PATH"
 
+    # Check for both Node.js and OpenCode
+    local node_ready=false
+    local opencode_ready=false
+
+    if command_exists node; then
+      node_ready=true
+    fi
+
     if command_exists opencode; then
+      opencode_ready=true
+    fi
+
+    if [ "$node_ready" = true ] && [ "$opencode_ready" = true ]; then
+      echo "✓ Node.js is ready: $(node --version)"
       echo "✓ OpenCode is ready: $(opencode --version 2>&1 | head -1)"
+      echo "✓ Environment validated successfully"
       return 0
     fi
 
     if [ $elapsed -eq 0 ]; then
-      echo "Waiting for OpenCode to be installed (this may take a minute)..."
+      echo "Waiting for installation (this may take a minute)..."
+      echo "  Node.js: $( [ "$node_ready" = true ] && echo "✓" || echo "⏳" )"
+      echo "  OpenCode: $( [ "$opencode_ready" = true ] && echo "✓" || echo "⏳" )"
     elif [ $((elapsed % 10)) -eq 0 ]; then
       echo "Still waiting... (${elapsed}s elapsed)"
+      echo "  Node.js: $( [ "$node_ready" = true ] && echo "✓" || echo "⏳" )"
+      echo "  OpenCode: $( [ "$opencode_ready" = true ] && echo "✓" || echo "⏳" )"
     fi
 
     sleep $wait_interval
     elapsed=$((elapsed + wait_interval))
   done
 
-  echo "ERROR: OpenCode not installed after ${max_wait} seconds."
-  echo "The installation script may have failed. Check the install logs above."
+  echo "ERROR: Installation did not complete after ${max_wait} seconds."
+  echo "Final status:"
+  echo "  Node.js: $( command_exists node && echo "✓ $(node --version)" || echo "✗ Not found" )"
+  echo "  OpenCode: $( command_exists opencode && echo "✓ Installed" || echo "✗ Not found" )"
+  echo ""
+  echo "Check the install logs above for errors."
   exit 1
 }
 
@@ -148,6 +170,23 @@ start_agentapi() {
   echo "Starting in directory: $ARG_WORKDIR"
   cd "$ARG_WORKDIR"
 
+  # Debug: Show environment
+  echo "=== Environment Debug ==="
+  echo "Node.js: $(which node) -> $(node --version 2>&1)"
+  echo "npm: $(which npm) -> $(npm --version 2>&1)"
+  echo "pnpm: $(which pnpm) -> $(pnpm --version 2>&1)"
+  echo "OpenCode: $(which opencode)"
+  echo "PATH: $PATH"
+  echo "NVM_DIR: $NVM_DIR"
+  echo "========================"
+
+  # Test OpenCode directly first
+  echo "Testing OpenCode command..."
+  if ! opencode --version; then
+    echo "ERROR: OpenCode command failed"
+    exit 1
+  fi
+
   echo "Starting OpenCode TUI with agentapi..."
   local initial_prompt
   initial_prompt=$(build_initial_prompt)
@@ -164,5 +203,5 @@ start_agentapi() {
 }
 
 setup_github_authentication
-validate_opencode_installation
+validate_environment
 start_agentapi
