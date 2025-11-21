@@ -14,11 +14,19 @@ Integrate [OpenCode.ai](https://opencode.ai/) - an AI coding agent that runs in 
 ## Quick Start
 
 ```tf
+# Node.js 18+ required for npm install method
+module "nodejs" {
+  source   = "registry.coder.com/thezoker/nodejs/coder"
+  agent_id = coder_agent.main.id
+}
+
 module "opencode" {
   source  = "git::https://github.com/rothnic/coder-registry.git//registry/rothnic/modules/opencode"
 
   agent_id = coder_agent.main.id
   workdir  = "/workspaces"
+
+  depends_on = [module.nodejs]
 }
 ```
 
@@ -79,11 +87,15 @@ See [variables](./main.tf) for complete list.
 - 📊 Task reporting to Coder UI
 - 💾 Session persistence
 - 🔐 Flexible authentication
-- 🚀 Auto-installs Node.js and OpenCode
+- 🚀 Uses nodejs module for installation
+
+## Prerequisites
+
+- **Node.js 18+**: Use the [nodejs module](https://github.com/coder/registry/tree/main/registry/thezoker/modules/nodejs) (npm install method only)
 
 ## Notes
 
-- Requires Node.js 18+ (auto-installed)
+- Uses [thezoker/nodejs](https://github.com/coder/registry/tree/main/registry/thezoker/modules/nodejs) module for Node.js installation
 - TUI may have limitations through AgentAPI (slash commands, menus)
 - For production, use `subdomain = true` with [wildcard access URL](https://coder.com/docs/admin/setup#wildcard-access-url)
 

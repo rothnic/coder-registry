@@ -7,27 +7,6 @@ command_exists() {
   command -v "$1" > /dev/null 2>&1
 }
 
-# Retry function for apt operations
-retry_apt() {
-  local max_attempts=5
-  local attempt=1
-  local delay=2
-
-  while [ $attempt -le $max_attempts ]; do
-    if "$@"; then
-      return 0
-    fi
-
-    echo "Command failed (attempt $attempt/$max_attempts). Retrying in ${delay}s..."
-    sleep $delay
-    attempt=$((attempt + 1))
-    delay=$((delay * 2))
-  done
-
-  echo "ERROR: Command failed after $max_attempts attempts: $*"
-  return 1
-}
-
 ARG_WORKDIR=${ARG_WORKDIR:-"$HOME"}
 ARG_REPORT_TASKS=${ARG_REPORT_TASKS:-true}
 ARG_MCP_APP_STATUS_SLUG=${ARG_MCP_APP_STATUS_SLUG:-}
@@ -36,75 +15,32 @@ ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_OPENCODE_VERSION=${ARG_OPENCODE_VERSION:-latest}
 ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-npm}
 
-install_nodejs() {
+validate_nodejs() {
   if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
-    # curl install method includes Node.js, skip
+    # curl install method doesn't need Node.js
     return 0
   fi
 
   if ! command_exists node; then
-    echo "Node.js not found. Installing Node.js 20..."
-
-    # Try to install using package manager
-    if command_exists apt-get; then
-      echo "Installing Node.js via apt-get..."
-
-      # Wait for any existing apt processes to finish
-      local wait_count=0
-      while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
-            sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-        if [ $wait_count -ge 30 ]; then
-          echo "WARNING: Waited 30s for apt lock, proceeding anyway..."
-          break
-        fi
-        echo "Waiting for other apt processes to finish..."
-        sleep 1
-        wait_count=$((wait_count + 1))
-      done
-
-      # Add NodeSource repository with retries
-      retry_apt bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
-
-      # Install Node.js with retries
-      retry_apt sudo apt-get install -y nodejs
-    elif command_exists yum; then
-      echo "Installing Node.js via yum..."
-      retry_apt bash -c "curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -"
-      retry_apt sudo yum install -y nodejs
-    elif command_exists apk; then
-      echo "Installing Node.js via apk..."
-      retry_apt sudo apk add --no-cache nodejs npm
-    else
-      echo "WARNING: Could not detect package manager. Attempting to install via nvm..."
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-      nvm install 20
-      nvm use 20
-    fi
-
-    # Reload shell environment
-    source "$HOME"/.bashrc 2>/dev/null || true
-
-    if ! command_exists node; then
-      echo "ERROR: Failed to install Node.js"
-      exit 1
-    fi
-
-    echo "✓ Node.js installed successfully: $(node --version)"
-  else
-    node_version=$(node --version | sed 's/v//' | cut -d. -f1)
-    if [ "$node_version" -lt 18 ]; then
-      echo "WARNING: Node.js v$node_version detected. OpenCode requires v18+. Attempting upgrade..."
-      # Attempt to upgrade (best effort)
-      if command_exists apt-get; then
-        retry_apt bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
-        retry_apt sudo apt-get install -y nodejs
-      fi
-    else
-      echo "✓ Node.js $(node --version) already installed"
-    fi
+    echo "ERROR: Node.js not found. OpenCode requires Node.js 18+ when using npm install method."
+    echo "Please install Node.js using the nodejs module:"
+    echo ""
+    echo "  module \"nodejs\" {"
+    echo "    source   = \"registry.coder.com/thezoker/nodejs/coder\""
+    echo "    agent_id = coder_agent.main.id"
+    echo "  }"
+    echo ""
+    exit 1
   fi
+
+  node_version=$(node --version | sed 's/v//' | cut -d. -f1)
+  if [ "$node_version" -lt 18 ]; then
+    echo "ERROR: Node.js v$node_version detected. OpenCode requires v18+."
+    echo "Please use the nodejs module with version >= 18."
+    exit 1
+  fi
+
+  echo "✓ Node.js $(node --version) found"
 }
 
 install_opencode() {
@@ -257,7 +193,7 @@ configure_coder_integration() {
   fi
 }
 
-install_nodejs
+validate_nodejs
 install_opencode
 check_github_authentication
 setup_opencode_configurations
