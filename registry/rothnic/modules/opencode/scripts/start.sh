@@ -95,11 +95,12 @@ start_agentapi() {
 
   # Run opencode with agentapi, backgrounded so start script returns quickly
   # The agentapi module's wrapper expects the script to exit so it can run its wait loop
+  # Use standard terminal dimensions (120x40) for TUI stability - prevents browser auto-scroll issues
   if [ -n "$initial_prompt" ]; then
     echo "Using initial prompt with system context"
-    agentapi server -I="$initial_prompt" --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR" &
+    agentapi server -I="$initial_prompt" --type=opencode --term-width 120 --term-height 40 -- opencode "$ARG_WORKDIR" &
   else
-    agentapi server --type=opencode --term-width 67 --term-height 1190 -- opencode "$ARG_WORKDIR" &
+    agentapi server --type=opencode --term-width 120 --term-height 40 -- opencode "$ARG_WORKDIR" &
   fi
 }
 
