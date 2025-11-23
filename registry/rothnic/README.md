@@ -1,6 +1,6 @@
 ---
 display_name: "Nick Roth"
-bio: "Software engineer specializing in data science infrastructure, containerization, and developer tooling. Based in Huntsville, AL, working on innovative solutions for autonomous development and productivity tools."
+bio: "Product leader and engineer focused on end-to-end product delivery and agentic AI systems. Based in Huntsville, AL."
 avatar: "./.images/avatar.png"
 github: "rothnic"
 linkedin: "http://www.linkedin.com/in/nicholasleeroth/"
@@ -10,23 +10,16 @@ status: "community"
 
 # Nick Roth
 
-Software engineer specializing in data science infrastructure, containerization, and developer tooling. Based in Huntsville, AL, I focus on building tools that enhance developer productivity and streamline workflows.
+Product manager and engineer with 14 years of experience leading product strategy, engineering delivery, and platform initiatives. I focus on end-to-end product ownership—from discovery and design through implementation, deployment, and iterative improvement. My current work centers on building self-learning, agentic systems that automate content and operational workflows while keeping humans in the loop for quality and governance.
 
 ## Expertise
 
-- **Developer Tooling**: Creating innovative solutions for autonomous software development
-- **Data Science Infrastructure**: Building containerized environments for Python, Jupyter, and data analysis
-- **DevOps & Automation**: Docker, Kubernetes, and CI/CD pipeline development
-- **AI/ML Integration**: Exploring AI-powered coding assistants and agent orchestration
+- **Product Leadership:** Cross-functional product strategy, roadmapping, team leadership, vendor and stakeholder management.
+- **Agentic Systems & Automation:** Designing and delivering self-learning agent pipelines, human-in-the-loop workflows, and production-ready automation for content and operations.
+- **Platform Delivery & Modernization:** Architecture, procurement, migrations, and shipping reliable systems from prototype to production.
+- **Growth & Experimentation:** SEO-led content strategy, A/B testing, experimentation frameworks, and monetization optimization.
+- **Systems Engineering:** Requirements, architecture, and integration across complex systems.
 
-## Notable Projects
+## Modules
 
-- **OpenCode Agents**: Multi-agent orchestration system for autonomous software development
-- **Docker-TinyConda**: Streamlined pattern for dockerizing Python applications with conda
-- **Anaconda-Notebook**: Popular Docker image for Jupyter Notebooks with full Anaconda installation (86+ stars)
-
-## Connect
-
-- 🌐 [Website](https://www.nickroth.com)
-- 💼 [LinkedIn](http://www.linkedin.com/in/nicholasleeroth/)
-- 🐙 [GitHub](https://github.com/rothnic)
+- [opencode](./modules/opencode/) - Execute AI-driven coding tasks and agentic workflows directly within Coder workspaces using OpenCode.
