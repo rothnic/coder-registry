@@ -33,7 +33,7 @@ variable "github_token" {
 
 variable "opencode_provider" {
   type        = string
-  description = "AI provider to use with OpenCode. Supported values: anthropic, openai, copilot (default), etc."
+  description = "Intended AI provider (for documentation/defaults). Actual provider is configured via opencode_auth_config or by running 'opencode auth login' in the workspace."
   default     = "copilot"
 }
 
@@ -198,13 +198,6 @@ resource "coder_env" "mcp_app_status_slug" {
   value    = local.app_slug
 }
 
-resource "coder_env" "opencode_provider" {
-  count    = var.opencode_provider != "" ? 1 : 0
-  agent_id = var.agent_id
-  name     = "OPENCODE_PROVIDER"
-  value    = var.opencode_provider
-}
-
 resource "coder_env" "github_token" {
   count    = var.github_token != "" ? 1 : 0
   agent_id = var.agent_id
@@ -244,7 +237,6 @@ module "agentapi" {
     ARG_WORKDIR='${local.workdir}' \
     ARG_AI_PROMPT='${base64encode(var.ai_prompt)}' \
     ARG_SYSTEM_PROMPT='${base64encode(local.final_system_prompt)}' \
-    ARG_OPENCODE_PROVIDER='${var.opencode_provider}' \
     ARG_EXTERNAL_AUTH_ID='${var.external_auth_id}' \
     ARG_RESUME_SESSION='${var.resume_session}' \
     ARG_OPENCODE_AUTH_CONFIG='${var.opencode_auth_config != "" ? base64encode(var.opencode_auth_config) : ""}' \

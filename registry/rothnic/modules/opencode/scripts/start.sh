@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-source "$HOME"/.bashrc 2>/dev/null || true
+source "$HOME"/.bashrc 2> /dev/null || true
 export PATH="$HOME/.local/bin:$PATH"
 
 command_exists() {
@@ -13,7 +13,6 @@ ARG_AI_PROMPT=$(echo -n "${ARG_AI_PROMPT:-}" | base64 -d 2> /dev/null || echo ""
 ARG_SYSTEM_PROMPT=$(echo -n "${ARG_SYSTEM_PROMPT:-}" | base64 -d 2> /dev/null || echo "")
 ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_RESUME_SESSION=${ARG_RESUME_SESSION:-true}
-ARG_OPENCODE_PROVIDER=${ARG_OPENCODE_PROVIDER:-copilot}
 ARG_OPENCODE_AUTH_CONFIG=$(echo -n "${ARG_OPENCODE_AUTH_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
 
 validate_opencode_installation() {
@@ -59,7 +58,7 @@ setup_github_authentication() {
   if [ -z "${GITHUB_TOKEN:-}" ]; then
     if command_exists coder; then
       local t
-      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2>/dev/null || echo "")
+      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null || echo "")
       if [ -n "$t" ] && [ "$t" != "null" ]; then
         export GITHUB_TOKEN="$t"
         export GH_TOKEN="$t"
@@ -72,7 +71,7 @@ setup_github_authentication() {
   fi
 
   # 3) If still no token env, fall back to gh CLI if it's logged in.
-  if [ -z "${GITHUB_TOKEN:-}" ] && command_exists gh && gh auth status >/dev/null 2>&1; then
+  if [ -z "${GITHUB_TOKEN:-}" ] && command_exists gh && gh auth status > /dev/null 2>&1; then
     echo "✓ GitHub CLI auth is available (gh auth status ok)"
   fi
 

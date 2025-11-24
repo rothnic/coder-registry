@@ -77,31 +77,6 @@ run "github_token_not_created_when_empty" {
   }
 }
 
-run "opencode_provider_env_var_created" {
-  command = plan
-
-  variables {
-    agent_id          = "test-agent"
-    workdir           = "/home/coder"
-    opencode_provider = "anthropic"
-  }
-
-  assert {
-    condition     = length(resource.coder_env.opencode_provider) == 1
-    error_message = "opencode_provider env var should be created when provider is specified"
-  }
-
-  assert {
-    condition     = resource.coder_env.opencode_provider[0].name == "OPENCODE_PROVIDER"
-    error_message = "opencode_provider env var name should be 'OPENCODE_PROVIDER'"
-  }
-
-  assert {
-    condition     = resource.coder_env.opencode_provider[0].value == "anthropic"
-    error_message = "opencode_provider env var value should match input"
-  }
-}
-
 run "install_method_validation" {
   command = plan
 

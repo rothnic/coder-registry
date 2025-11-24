@@ -32,7 +32,7 @@ module "opencode" {
   source   = "registry.coder.com/rothnic/opencode/coder"
   agent_id = coder_agent.main.id
   workdir  = "/home/coder"
-  
+
   ai_prompt    = data.coder_task.me.prompt
   report_tasks = true
 }
@@ -45,7 +45,7 @@ module "opencode" {
   source   = "registry.coder.com/rothnic/opencode/coder"
   agent_id = coder_agent.main.id
   workdir  = "/home/coder"
-  
+
   opencode_model = "claude-3.7-sonnet"
   mcp_servers = jsonencode({
     filesystem = {
@@ -58,21 +58,24 @@ module "opencode" {
 
 ## Authentication
 
-### GitHub Copilot (Recommended)
+OpenCode supports many AI providers (GitHub Copilot, Anthropic Claude, OpenAI, etc.). Authentication is managed via `~/.local/share/opencode/auth.json`, created by running `opencode auth login`.
 
-GitHub Copilot requires a special session token format. The most reliable method is pre-configured auth:
+### GitHub Copilot
 
-**Step 1: Generate auth on your local machine**
+GitHub Copilot requires OAuth device flow authentication - you cannot use standard GitHub tokens.
+
+**Option 1: Pre-configured auth (recommended for automation)**
+
+Generate auth on your local machine, then embed in your template:
 
 ```bash
+# On your local machine
 npm install -g opencode-ai
-opencode auth login  # Complete GitHub device flow
-cat ~/.local/share/opencode/auth.json  # Copy this content
+opencode auth login                   # Select "GitHub Copilot", complete device flow
+cat ~/.local/share/opencode/auth.json # Copy this content
 ```
 
-**Step 2: Add auth file to your template**
-
-Create `opencode-auth.json` in your template directory with the copied content, then reference it:
+Create `opencode-auth.json` in your template directory, then reference it:
 
 ```tf
 module "opencode" {
@@ -83,69 +86,75 @@ module "opencode" {
 }
 ```
 
-**Alternative: Manual login per workspace**
+**Option 2: Manual login per workspace**
 
-Users can run `opencode auth login` inside the workspace. Auth persists across workspace restarts.
-
-**Note on Coder external auth:** Standard OAuth tokens typically don't work with Copilot's authentication system.
+Users run `opencode auth login` inside the workspace. Auth persists across restarts.
 
 ### Other Providers (Claude, OpenAI, etc.)
 
-For Anthropic, OpenAI, and other providers, users authenticate via `opencode auth login` in the workspace. Provider is configured via `opencode_provider` variable.
+For Anthropic, OpenAI, DeepSeek, Groq, and [other providers](https://opencode.ai/docs/providers/):
+
+1. Users run `opencode auth login` in the workspace
+2. Select their provider and enter API key
+3. Credentials persist in `~/.local/share/opencode/auth.json`
+
+Or provide API keys via environment variables (see provider docs).
+
+**Note:** The `opencode_provider` variable is for documentation only - it doesn't configure OpenCode. Provider selection happens via `opencode auth login`.
 
 ## Configuration
 
 ### Core Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `agent_id` | Coder agent ID | - | Yes |
-| `workdir` | Working directory for OpenCode | - | Yes |
+| Variable   | Description                    | Default | Required |
+| ---------- | ------------------------------ | ------- | -------- |
+| `agent_id` | Coder agent ID                 | -       | Yes      |
+| `workdir`  | Working directory for OpenCode | -       | Yes      |
 
 ### Authentication & Provider
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `opencode_auth_config` | Pre-configured auth.json content (for GitHub Copilot) | `""` |
-| `opencode_provider` | AI provider: `copilot`, `anthropic`, `openai`, etc. | `"copilot"` |
-| `github_token` | GitHub token (alternative to auth_config) | `""` |
-| `external_auth_id` | Coder external auth provider ID | `"github"` |
+| Variable               | Description                                                                            | Default     |
+| ---------------------- | -------------------------------------------------------------------------------------- | ----------- |
+| `opencode_auth_config` | Pre-configured auth.json content (for GitHub Copilot or any provider)                  | `""`        |
+| `opencode_provider`    | Intended provider (documentation only - actual provider set via `opencode auth login`) | `"copilot"` |
+| `github_token`         | GitHub token for git operations (not AI provider auth)                                 | `""`        |
+| `external_auth_id`     | Coder external auth provider ID for git operations                                     | `"github"`  |
 
 ### Task Integration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ai_prompt` | Initial task prompt (use `data.coder_task.me.prompt`) | `""` |
-| `system_prompt` | Custom system prompt for the AI | Built-in prompt |
-| `report_tasks` | Enable task reporting to Coder UI | `true` |
-| `resume_session` | Auto-resume latest session on restart | `true` |
+| Variable         | Description                                           | Default         |
+| ---------------- | ----------------------------------------------------- | --------------- |
+| `ai_prompt`      | Initial task prompt (use `data.coder_task.me.prompt`) | `""`            |
+| `system_prompt`  | Custom system prompt for the AI                       | Built-in prompt |
+| `report_tasks`   | Enable task reporting to Coder UI                     | `true`          |
+| `resume_session` | Auto-resume latest session on restart                 | `true`          |
 
 ### Installation & Versioning
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `opencode_version` | OpenCode version (`latest` or specific version) | `"latest"` |
-| `install_method` | Installation method (`npm` recommended) | `"npm"` |
-| `install_agentapi` | Install AgentAPI | `true` |
-| `agentapi_version` | AgentAPI version | `"v0.10.0"` |
+| Variable           | Description                                     | Default     |
+| ------------------ | ----------------------------------------------- | ----------- |
+| `opencode_version` | OpenCode version (`latest` or specific version) | `"latest"`  |
+| `install_method`   | Installation method (`npm` recommended)         | `"npm"`     |
+| `install_agentapi` | Install AgentAPI                                | `true`      |
+| `agentapi_version` | AgentAPI version                                | `"v0.10.0"` |
 
 ### UI & Apps
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `web_app_display_name` | Display name in Coder UI | `"OpenCode"` |
-| `order` | App position in UI | `null` |
-| `group` | App group name | `null` |
-| `icon` | App icon path | `"/icon/code.svg"` |
-| `subdomain` | Use subdomain for app access | `false` |
-| `cli_app` | Create CLI app entry | `false` |
+| Variable               | Description                  | Default            |
+| ---------------------- | ---------------------------- | ------------------ |
+| `web_app_display_name` | Display name in Coder UI     | `"OpenCode"`       |
+| `order`                | App position in UI           | `null`             |
+| `group`                | App group name               | `null`             |
+| `icon`                 | App icon path                | `"/icon/code.svg"` |
+| `subdomain`            | Use subdomain for app access | `false`            |
+| `cli_app`              | Create CLI app entry         | `false`            |
 
 ### Model & MCP Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `opencode_model` | Model to use (e.g., `claude-3.7-sonnet`, `gpt-4o`). If empty, uses provider default. | `""` |
-| `mcp_servers` | MCP servers configuration as JSON string (see example below) | `""` |
+| Variable         | Description                                                                          | Default |
+| ---------------- | ------------------------------------------------------------------------------------ | ------- |
+| `opencode_model` | Model to use (e.g., `claude-3.7-sonnet`, `gpt-4o`). If empty, uses provider default. | `""`    |
+| `mcp_servers`    | MCP servers configuration as JSON string (see example below)                         | `""`    |
 
 **MCP Servers Example:**
 
@@ -175,11 +184,11 @@ module "opencode" {
 
 ### Advanced
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `opencode_config` | Full custom OpenCode config (JSON). Overrides other config options. | `""` |
-| `pre_install_script` | Script to run before install | `null` |
-| `post_install_script` | Script to run after install | `null` |
+| Variable              | Description                                                         | Default |
+| --------------------- | ------------------------------------------------------------------- | ------- |
+| `opencode_config`     | Full custom OpenCode config (JSON). Overrides other config options. | `""`    |
+| `pre_install_script`  | Script to run before install                                        | `null`  |
+| `post_install_script` | Script to run after install                                         | `null`  |
 
 See [main.tf](./main.tf) for complete variable definitions.
 
@@ -242,14 +251,11 @@ module "opencode" {
   agent_id = coder_agent.main.id
   workdir  = "/workspaces"
 
-  # Pre-configured GitHub Copilot authentication
+  # Pre-configured authentication (from 'opencode auth login' output)
   opencode_auth_config = file("${path.module}/opencode-auth.json")
 
   # Pass task prompt from Coder Tasks UI
   ai_prompt = data.coder_task.me.prompt
-
-  # GitHub Copilot provider (default)
-  opencode_provider = "copilot"
 
   # Enable task reporting for Coder UI integration
   report_tasks = true

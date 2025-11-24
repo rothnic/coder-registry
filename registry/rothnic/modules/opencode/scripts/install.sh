@@ -1,15 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# Load any existing PATH customizations
-source "$HOME"/.bashrc 2>/dev/null || true
+source "$HOME"/.bashrc 2> /dev/null || true
 
 command_exists() {
   command -v "$1" > /dev/null 2>&1
 }
 
-# ---------- ARGUMENTS / CONFIG ----------
-
+# Configuration
 ARG_WORKDIR=${ARG_WORKDIR:-"$HOME"}
 ARG_REPORT_TASKS=${ARG_REPORT_TASKS:-true}
 ARG_MCP_APP_STATUS_SLUG=${ARG_MCP_APP_STATUS_SLUG:-}
@@ -20,10 +18,7 @@ ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_OPENCODE_VERSION=${ARG_OPENCODE_VERSION:-latest}
 ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-npm}
 
-# Version pins for the toolchain
 NODE_VERSION="${NODE_VERSION:-20.18.0}"
-
-# ---------- NODE INSTALL (NO APT/NVM, SHARED CACHE) ----------
 
 install_nodejs() {
   if [ "$ARG_INSTALL_METHOD" != "npm" ]; then
@@ -62,7 +57,7 @@ install_nodejs() {
   export NPM_CONFIG_CACHE="$npm_cache_dir"
 
   # Persist PATH + npm cache so start.sh and future shells see it
-  if ! grep -q "node-v${NODE_VERSION}-${node_distro}/bin" "$HOME/.bashrc" 2>/dev/null; then
+  if ! grep -q "node-v${NODE_VERSION}-${node_distro}/bin" "$HOME/.bashrc" 2> /dev/null; then
     {
       echo "export PATH=\"${node_dir}/bin:\$HOME/.local/bin:\$PATH\""
       echo "export NPM_CONFIG_CACHE=\"${npm_cache_dir}\""
@@ -77,8 +72,6 @@ install_nodejs() {
   echo "✓ Node.js installed via tarball: $(node --version)"
 }
 
-# ---------- OPENCODE INSTALL (NPM, PINNABLE VERSION) ----------
-
 install_opencode() {
   mkdir -p "$HOME/.local/bin"
   export PATH="$HOME/.local/bin:$PATH"
@@ -86,9 +79,9 @@ install_opencode() {
   if ! command_exists opencode; then
     echo "Installing OpenCode via npm (version: ${ARG_OPENCODE_VERSION})..."
 
-    npm config set prefix "$HOME/.local" >/dev/null 2>&1 || true
+    npm config set prefix "$HOME/.local" > /dev/null 2>&1 || true
 
-    if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+    if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2> /dev/null; then
       echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
     fi
 
@@ -111,10 +104,8 @@ install_opencode() {
   fi
 }
 
-# ---------- GITHUB AUTH (for git/gh, NOT auth.json) ----------
-
 check_github_authentication() {
-  echo "Checking GitHub authentication for git/gh use (not Copilot tokens)..."
+  echo "Checking GitHub authentication..."
 
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "✓ GITHUB_TOKEN already set via environment/module"
@@ -124,7 +115,7 @@ check_github_authentication() {
   if command_exists coder; then
     if coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" > /dev/null 2>&1; then
       local t
-      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2>/dev/null || echo "")
+      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null || echo "")
       if [ -n "$t" ] && [ "$t" != "null" ]; then
         export GITHUB_TOKEN="$t"
         export GH_TOKEN="$t"
@@ -143,8 +134,6 @@ check_github_authentication() {
   echo "  This only affects Git operations / gh; OpenCode can still use other providers."
   return 0
 }
-
-# ---------- OPENCODE CONFIG (opencode.json, not auth.json) ----------
 
 setup_opencode_configurations() {
   mkdir -p "$ARG_WORKDIR"
@@ -209,17 +198,6 @@ setup_opencode_config() {
   fi
 }
 
-# ---------- COPILOT / CODER INTEGRATION (NO auth.json FABRICATED) ----------
-
-configure_github_copilot_provider() {
-  # We do NOT fabricate auth.json here anymore.
-  export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-  local opencode_data_dir="$XDG_DATA_HOME/opencode"
-  mkdir -p "$opencode_data_dir"
-
-  echo "OpenCode auth.json will be provided via opencode_auth_config or created by 'opencode auth login'."
-}
-
 configure_coder_integration() {
   if [ "$ARG_REPORT_TASKS" = "true" ] && [ -n "$ARG_MCP_APP_STATUS_SLUG" ]; then
     echo "Configuring OpenCode task reporting..."
@@ -233,13 +211,11 @@ configure_coder_integration() {
   fi
 }
 
-# ---------- RUN IT ----------
-
+# Main execution
 install_nodejs
 install_opencode
 check_github_authentication
 setup_opencode_configurations
-configure_github_copilot_provider
 configure_coder_integration
 
 echo "OpenCode module setup completed."
