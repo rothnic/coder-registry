@@ -103,7 +103,7 @@ For Anthropic, OpenAI, and other providers, users authenticate via `opencode aut
 ### Authentication & Provider
 
 | Variable | Description | Default |
-|----------|-------------|---------||
+|----------|-------------|---------|
 | `opencode_auth_config` | Pre-configured auth.json content (for GitHub Copilot) | `""` |
 | `opencode_provider` | AI provider: `copilot`, `anthropic`, `openai`, etc. | `"copilot"` |
 | `github_token` | GitHub token (alternative to auth_config) | `""` |
@@ -112,7 +112,7 @@ For Anthropic, OpenAI, and other providers, users authenticate via `opencode aut
 ### Task Integration
 
 | Variable | Description | Default |
-|----------|-------------|---------||
+|----------|-------------|---------|
 | `ai_prompt` | Initial task prompt (use `data.coder_task.me.prompt`) | `""` |
 | `system_prompt` | Custom system prompt for the AI | Built-in prompt |
 | `report_tasks` | Enable task reporting to Coder UI | `true` |
@@ -121,7 +121,7 @@ For Anthropic, OpenAI, and other providers, users authenticate via `opencode aut
 ### Installation & Versioning
 
 | Variable | Description | Default |
-|----------|-------------|---------||
+|----------|-------------|---------|
 | `opencode_version` | OpenCode version (`latest` or specific version) | `"latest"` |
 | `install_method` | Installation method (`npm` recommended) | `"npm"` |
 | `install_agentapi` | Install AgentAPI | `true` |
@@ -130,7 +130,7 @@ For Anthropic, OpenAI, and other providers, users authenticate via `opencode aut
 ### UI & Apps
 
 | Variable | Description | Default |
-|----------|-------------|---------||
+|----------|-------------|---------|
 | `web_app_display_name` | Display name in Coder UI | `"OpenCode"` |
 | `order` | App position in UI | `null` |
 | `group` | App group name | `null` |
@@ -138,11 +138,44 @@ For Anthropic, OpenAI, and other providers, users authenticate via `opencode aut
 | `subdomain` | Use subdomain for app access | `false` |
 | `cli_app` | Create CLI app entry | `false` |
 
+### Model & MCP Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `opencode_model` | Model to use (e.g., `claude-3.7-sonnet`, `gpt-4o`). If empty, uses provider default. | `""` |
+| `mcp_servers` | MCP servers configuration as JSON string (see example below) | `""` |
+
+**MCP Servers Example:**
+
+```tf
+module "opencode" {
+  source   = "registry.coder.com/rothnic/opencode/coder"
+  agent_id = coder_agent.main.id
+  workdir  = "/workspaces"
+
+  opencode_model = "claude-3.7-sonnet"
+
+  mcp_servers = jsonencode({
+    "filesystem" = {
+      command = "npx"
+      args    = ["-y", "@modelcontextprotocol/server-filesystem", "/workspaces"]
+    }
+    "github" = {
+      command = "npx"
+      args    = ["-y", "@modelcontextprotocol/server-github"]
+      env = {
+        GITHUB_TOKEN = var.github_token
+      }
+    }
+  })
+}
+```
+
 ### Advanced
 
 | Variable | Description | Default |
-|----------|-------------|---------||
-| `opencode_config` | Custom OpenCode config (JSON) | `""` |
+|----------|-------------|---------|
+| `opencode_config` | Full custom OpenCode config (JSON). Overrides other config options. | `""` |
 | `pre_install_script` | Script to run before install | `null` |
 | `post_install_script` | Script to run after install | `null` |
 
@@ -151,6 +184,8 @@ See [main.tf](./main.tf) for complete variable definitions.
 ## Features
 
 - 🤖 Multiple AI providers (Copilot, Claude, GPT)
+- 🔧 MCP servers configuration support
+- 🎯 Model selection per deployment
 - 📊 Task reporting to Coder UI
 - 💾 Session persistence
 - 🔐 Flexible authentication

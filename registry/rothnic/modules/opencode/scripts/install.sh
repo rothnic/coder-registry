@@ -14,6 +14,8 @@ ARG_WORKDIR=${ARG_WORKDIR:-"$HOME"}
 ARG_REPORT_TASKS=${ARG_REPORT_TASKS:-true}
 ARG_MCP_APP_STATUS_SLUG=${ARG_MCP_APP_STATUS_SLUG:-}
 ARG_OPENCODE_CONFIG=$(echo -n "${ARG_OPENCODE_CONFIG:-}" | base64 -d 2> /dev/null || echo "")
+ARG_MCP_SERVERS=$(echo -n "${ARG_MCP_SERVERS:-}" | base64 -d 2> /dev/null || echo "")
+ARG_OPENCODE_MODEL=${ARG_OPENCODE_MODEL:-}
 ARG_EXTERNAL_AUTH_ID=${ARG_EXTERNAL_AUTH_ID:-github}
 ARG_OPENCODE_VERSION=${ARG_OPENCODE_VERSION:-latest}
 ARG_INSTALL_METHOD=${ARG_INSTALL_METHOD:-npm}
@@ -156,14 +158,54 @@ setup_opencode_configurations() {
 setup_opencode_config() {
   export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
   local opencode_data_dir="$XDG_DATA_HOME/opencode"
+  local opencode_config_dir="$HOME/.config/opencode"
 
   mkdir -p "$opencode_data_dir"
+  mkdir -p "$opencode_config_dir"
 
+  # If full custom config provided, use it directly
   if [ -n "$ARG_OPENCODE_CONFIG" ]; then
-    echo "Setting up OpenCode configuration (opencode.json)..."
-    local opencode_config_dir="$HOME/.config/opencode"
-    mkdir -p "$opencode_config_dir"
+    echo "Setting up OpenCode configuration (opencode.json) from custom config..."
     echo "$ARG_OPENCODE_CONFIG" > "$opencode_config_dir/opencode.json"
+    return 0
+  fi
+
+  # Otherwise, build config from individual options
+  echo "Building OpenCode configuration..."
+
+  # Start with base config
+  local config='{}'
+
+  # Add model config if specified
+  if [ -n "$ARG_OPENCODE_MODEL" ]; then
+    echo "  Adding model configuration: $ARG_OPENCODE_MODEL"
+    config=$(echo "$config" | jq --arg model "$ARG_OPENCODE_MODEL" '. + {
+      "agents": {
+        "coder": {"model": $model},
+        "task": {"model": $model}
+      }
+    }')
+  fi
+
+  # Add MCP servers if specified
+  if [ -n "$ARG_MCP_SERVERS" ]; then
+    echo "  Adding MCP servers configuration..."
+    # Merge MCP servers into config
+    local mcp_config
+    mcp_config=$(echo "$ARG_MCP_SERVERS" | jq '.')
+    if [ $? -eq 0 ] && [ -n "$mcp_config" ]; then
+      config=$(echo "$config" | jq --argjson mcp "$mcp_config" '. + {"mcpServers": $mcp}')
+    else
+      echo "  ⚠ Warning: Invalid MCP servers JSON, skipping"
+    fi
+  fi
+
+  # Only write config if we have something to configure
+  if [ "$config" != '{}' ]; then
+    echo "$config" | jq '.' > "$opencode_config_dir/opencode.json"
+    echo "✓ OpenCode config written to $opencode_config_dir/opencode.json"
+  else
+    echo "  No custom configuration needed"
   fi
 }
 

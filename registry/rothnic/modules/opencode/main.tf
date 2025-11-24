@@ -37,9 +37,21 @@ variable "opencode_provider" {
   default     = "copilot"
 }
 
+variable "opencode_model" {
+  type        = string
+  description = "The model for OpenCode to use (e.g., 'claude-3.7-sonnet', 'gpt-4o'). If empty, uses provider default."
+  default     = ""
+}
+
+variable "mcp_servers" {
+  type        = string
+  description = "MCP servers configuration as JSON string. Will be merged into the mcpServers section of opencode.json. Example: '{\"filesystem\":{\"type\":\"stdio\",\"command\":\"npx\",\"args\":[\"-y\",\"@modelcontextprotocol/server-filesystem\",\"/workspaces\"]}}'"
+  default     = ""
+}
+
 variable "opencode_config" {
   type        = string
-  description = "Custom OpenCode configuration as JSON string."
+  description = "Complete custom OpenCode configuration as JSON string. If provided, this overrides default config generation. For partial config (just MCP servers), use mcp_servers variable instead."
   default     = ""
 }
 
@@ -250,6 +262,8 @@ module "agentapi" {
     ARG_REPORT_TASKS='${var.report_tasks}' \
     ARG_WORKDIR='${local.workdir}' \
     ARG_OPENCODE_CONFIG='${var.opencode_config != "" ? base64encode(var.opencode_config) : ""}' \
+    ARG_MCP_SERVERS='${var.mcp_servers != "" ? base64encode(var.mcp_servers) : ""}' \
+    ARG_OPENCODE_MODEL='${var.opencode_model}' \
     ARG_EXTERNAL_AUTH_ID='${var.external_auth_id}' \
     ARG_OPENCODE_VERSION='${var.opencode_version}' \
     ARG_INSTALL_METHOD='${var.install_method}' \
