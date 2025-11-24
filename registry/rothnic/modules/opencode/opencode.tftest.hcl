@@ -229,3 +229,83 @@ run "agentapi_version_is_set" {
     error_message = "AgentAPI version should be set to v0.10.0"
   }
 }
+
+run "mcp_servers_config" {
+  command = plan
+
+  variables {
+    agent_id = "test-agent"
+    workdir  = "/home/coder"
+    mcp_servers = jsonencode({
+      filesystem = {
+        command = "npx"
+        args    = ["-y", "@modelcontextprotocol/server-filesystem", "/workspaces"]
+      }
+    })
+  }
+
+  assert {
+    condition     = var.mcp_servers != ""
+    error_message = "MCP servers configuration should be provided"
+  }
+}
+
+run "opencode_model_config" {
+  command = plan
+
+  variables {
+    agent_id       = "test-agent"
+    workdir        = "/home/coder"
+    opencode_model = "claude-3.7-sonnet"
+  }
+
+  assert {
+    condition     = var.opencode_model == "claude-3.7-sonnet"
+    error_message = "OpenCode model should be set to 'claude-3.7-sonnet'"
+  }
+}
+
+run "mcp_and_model_combined" {
+  command = plan
+
+  variables {
+    agent_id       = "test-agent"
+    workdir        = "/home/coder"
+    opencode_model = "gpt-4o"
+    mcp_servers = jsonencode({
+      github = {
+        command = "npx"
+        args    = ["-y", "@modelcontextprotocol/server-github"]
+      }
+    })
+  }
+
+  assert {
+    condition     = var.opencode_model == "gpt-4o"
+    error_message = "OpenCode model should be set"
+  }
+
+  assert {
+    condition     = var.mcp_servers != ""
+    error_message = "MCP servers should be configured"
+  }
+}
+
+run "model_defaults_to_empty" {
+  command = plan
+
+  variables {
+    agent_id = "test-agent"
+    workdir  = "/home/coder"
+  }
+
+  assert {
+    condition     = var.opencode_model == ""
+    error_message = "OpenCode model should default to empty (provider default)"
+  }
+
+  assert {
+    condition     = var.mcp_servers == ""
+    error_message = "MCP servers should default to empty"
+  }
+}

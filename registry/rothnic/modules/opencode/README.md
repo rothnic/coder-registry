@@ -13,30 +13,17 @@ Integrate [OpenCode.ai](https://opencode.ai/) - an AI coding agent that executes
 
 ## Quick Start
 
-**Minimal setup (manual auth):**
+**Basic setup:**
 
 ```tf
 module "opencode" {
   source   = "registry.coder.com/rothnic/opencode/coder"
   agent_id = coder_agent.main.id
-  workdir  = "/workspaces"
+  workdir  = "/home/coder"
 }
 ```
 
-**With pre-configured GitHub Copilot auth:**
-
-```tf
-module "opencode" {
-  source   = "registry.coder.com/rothnic/opencode/coder"
-  agent_id = coder_agent.main.id
-  workdir  = "/workspaces"
-
-  # Pre-configured auth from local machine
-  opencode_auth_config = file("${path.module}/opencode-auth.json")
-}
-```
-
-**With Coder Tasks integration:**
+**With Coder Tasks (recommended for AI workspaces):**
 
 ```tf
 data "coder_task" "me" {}
@@ -44,13 +31,28 @@ data "coder_task" "me" {}
 module "opencode" {
   source   = "registry.coder.com/rothnic/opencode/coder"
   agent_id = coder_agent.main.id
-  workdir  = "/workspaces"
-
-  # Pass task prompt from Coder Tasks UI
-  ai_prompt = data.coder_task.me.prompt
-
-  # Enable task reporting for Coder UI integration
+  workdir  = "/home/coder"
+  
+  ai_prompt    = data.coder_task.me.prompt
   report_tasks = true
+}
+```
+
+**With model and MCP servers:**
+
+```tf
+module "opencode" {
+  source   = "registry.coder.com/rothnic/opencode/coder"
+  agent_id = coder_agent.main.id
+  workdir  = "/home/coder"
+  
+  opencode_model = "claude-3.7-sonnet"
+  mcp_servers = jsonencode({
+    filesystem = {
+      command = "npx"
+      args    = ["-y", "@modelcontextprotocol/server-filesystem", "/home/coder"]
+    }
+  })
 }
 ```
 
