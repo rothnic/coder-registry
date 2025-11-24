@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Load any existing PATH customizations
-source "$HOME"/.bashrc 2>/dev/null || true
+source "$HOME"/.bashrc 2> /dev/null || true
 
 command_exists() {
   command -v "$1" > /dev/null 2>&1
@@ -62,7 +62,7 @@ install_nodejs() {
   export NPM_CONFIG_CACHE="$npm_cache_dir"
 
   # Persist PATH + npm cache so start.sh and future shells see it
-  if ! grep -q "node-v${NODE_VERSION}-${node_distro}/bin" "$HOME/.bashrc" 2>/dev/null; then
+  if ! grep -q "node-v${NODE_VERSION}-${node_distro}/bin" "$HOME/.bashrc" 2> /dev/null; then
     {
       echo "export PATH=\"${node_dir}/bin:\$HOME/.local/bin:\$PATH\""
       echo "export NPM_CONFIG_CACHE=\"${npm_cache_dir}\""
@@ -86,9 +86,10 @@ install_opencode() {
   if ! command_exists opencode; then
     echo "Installing OpenCode via npm (version: ${ARG_OPENCODE_VERSION})..."
 
-    npm config set prefix "$HOME/.local" >/dev/null 2>&1 || true
+    # Use environment variable instead of npm config to avoid .npmrc conflicts with nvm
+    export NPM_CONFIG_PREFIX="$HOME/.local"
 
-    if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+    if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2> /dev/null; then
       echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
     fi
 
@@ -124,7 +125,7 @@ check_github_authentication() {
   if command_exists coder; then
     if coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" > /dev/null 2>&1; then
       local t
-      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2>/dev/null || echo "")
+      t=$(coder external-auth access-token "${ARG_EXTERNAL_AUTH_ID:-github}" 2> /dev/null || echo "")
       if [ -n "$t" ] && [ "$t" != "null" ]; then
         export GITHUB_TOKEN="$t"
         export GH_TOKEN="$t"
