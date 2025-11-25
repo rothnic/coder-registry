@@ -125,7 +125,7 @@ variable "group" {
 variable "icon" {
   type        = string
   description = "The icon to use for the app."
-  default     = "/icon/code.svg"
+  default     = "/icon/opencode.png"
 }
 
 variable "web_app_display_name" {
