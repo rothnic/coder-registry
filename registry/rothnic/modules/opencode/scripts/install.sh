@@ -28,7 +28,8 @@ install_nodejs() {
   fi
 
   # Shared tool root across workspaces on this host
-  local dev_root="${DEV_ROOT:-/workspaces}"
+  # Use HOME as fallback since /workspaces may not exist or be writable
+  local dev_root="${DEV_ROOT:-$HOME}"
   local tool_root="${TOOL_ROOT:-$dev_root/.coder-tools}"
   local node_distro="linux-x64"
   local node_tarball="node-v${NODE_VERSION}-${node_distro}.tar.xz"
