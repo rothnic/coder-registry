@@ -49,8 +49,8 @@ module "opencode" {
   opencode_model = "claude-3.7-sonnet"
   mcp_servers = jsonencode({
     filesystem = {
-      command = "npx"
-      args    = ["-y", "@modelcontextprotocol/server-filesystem", "/home/coder"]
+      type    = "local"
+      command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/coder"]
     }
   })
 }
@@ -158,6 +158,8 @@ Or provide API keys via environment variables (see provider docs).
 
 **MCP Servers Example:**
 
+OpenCode uses `type: "local"` for local MCP servers with `command` as an array (including all arguments):
+
 ```tf
 module "opencode" {
   source   = "registry.coder.com/rothnic/opencode/coder"
@@ -167,20 +169,33 @@ module "opencode" {
   opencode_model = "claude-3.7-sonnet"
 
   mcp_servers = jsonencode({
-    "filesystem" = {
-      command = "npx"
-      args    = ["-y", "@modelcontextprotocol/server-filesystem", "/workspaces"]
+    filesystem = {
+      type    = "local"
+      command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/workspaces"]
     }
-    "github" = {
-      command = "npx"
-      args    = ["-y", "@modelcontextprotocol/server-github"]
-      env = {
+    github = {
+      type    = "local"
+      command = ["npx", "-y", "@modelcontextprotocol/server-github"]
+      environment = {
         GITHUB_TOKEN = var.github_token
       }
     }
   })
 }
 ```
+
+For remote MCP servers, use `type: "remote"` with a `url`:
+
+```tf
+mcp_servers = jsonencode({
+  context7 = {
+    type = "remote"
+    url  = "https://mcp.context7.com/mcp"
+  }
+})
+```
+
+See [OpenCode MCP documentation](https://opencode.ai/docs/mcp-servers/) for more details.
 
 ### Advanced
 

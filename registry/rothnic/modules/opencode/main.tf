@@ -45,7 +45,7 @@ variable "opencode_model" {
 
 variable "mcp_servers" {
   type        = string
-  description = "MCP servers configuration as JSON string. Will be merged into the mcpServers section of opencode.json. Example: '{\"filesystem\":{\"type\":\"stdio\",\"command\":\"npx\",\"args\":[\"-y\",\"@modelcontextprotocol/server-filesystem\",\"/workspaces\"]}}'"
+  description = "MCP servers configuration as JSON string. Will be merged into the 'mcp' section of opencode.json. OpenCode format uses type='local' with command as array. Example: '{\"filesystem\":{\"type\":\"local\",\"command\":[\"npx\",\"-y\",\"@modelcontextprotocol/server-filesystem\",\"/workspaces\"]}}'"
   default     = ""
 }
 

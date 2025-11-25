@@ -176,14 +176,14 @@ setup_opencode_config() {
     }')
   fi
 
-  # Add MCP servers if specified
+  # Add MCP servers if specified (OpenCode uses 'mcp' key, not 'mcpServers')
   if [ -n "$ARG_MCP_SERVERS" ]; then
     echo "  Adding MCP servers configuration..."
-    # Merge MCP servers into config
+    # Merge MCP servers into config under 'mcp' key
     local mcp_config
     mcp_config=$(echo "$ARG_MCP_SERVERS" | jq '.')
     if [ $? -eq 0 ] && [ -n "$mcp_config" ]; then
-      config=$(echo "$config" | jq --argjson mcp "$mcp_config" '. + {"mcpServers": $mcp}')
+      config=$(echo "$config" | jq --argjson mcp "$mcp_config" '. + {"mcp": $mcp}')
     else
       echo "  ⚠ Warning: Invalid MCP servers JSON, skipping"
     fi
