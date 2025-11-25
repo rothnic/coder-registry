@@ -140,14 +140,16 @@ Or provide API keys via environment variables (see provider docs).
 
 ### UI & Apps
 
-| Variable               | Description                  | Default            |
-| ---------------------- | ---------------------------- | ------------------ |
-| `web_app_display_name` | Display name in Coder UI     | `"OpenCode"`       |
-| `order`                | App position in UI           | `null`             |
-| `group`                | App group name               | `null`             |
-| `icon`                 | App icon path                | `"/icon/code.svg"` |
-| `subdomain`            | Use subdomain for app access | `false`            |
-| `cli_app`              | Create CLI app entry         | `false`            |
+| Variable               | Description                                                                | Default            |
+| ---------------------- | -------------------------------------------------------------------------- | ------------------ |
+| `web_app_display_name` | Display name in Coder UI                                                   | `"OpenCode"`       |
+| `order`                | App position in UI                                                         | `null`             |
+| `group`                | App group name                                                             | `null`             |
+| `icon`                 | App icon path                                                              | `"/icon/code.svg"` |
+| `subdomain`            | Use subdomain for app access (requires [wildcard DNS][wildcard-dns-setup]) | `false`            |
+| `cli_app`              | Create CLI app entry                                                       | `false`            |
+
+[wildcard-dns-setup]: https://coder.com/docs/admin/setup#wildcard-access-url
 
 ### Model & MCP Configuration
 
@@ -274,6 +276,9 @@ module "opencode" {
 
   # Enable task reporting for Coder UI integration
   report_tasks = true
+
+  # Use subdomain for better app routing (requires wildcard DNS)
+  # subdomain = true
 
   # Display settings
   order                = 1
